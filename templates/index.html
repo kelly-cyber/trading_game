@@ -72,6 +72,36 @@
                             <p><strong>Portfolio Value:</strong> {{ "%.2f"|format(portfolio_value) }}</p>
                             <p><strong>Delta:</strong> {{ "%.4f"|format(simulator.portfolio.delta()) }}</p>
                             <p><strong>Vega:</strong> {{ "%.4f"|format(simulator.portfolio.vega()) }}</p>
+                            
+                            {% if total_pnl is not none %}
+                                <h5 class="mt-3">PNL after 2 rolls</h5>
+                                <p class="fw-bold {{ 'text-success' if total_pnl > 0 else 'text-danger' if total_pnl < 0 else '' }}">
+                                    Total PNL: {{ "%.2f"|format(total_pnl) }}
+                                </p>
+                                
+                                <table class="table table-sm">
+                                    <thead>
+                                        <tr>
+                                            <th>Position</th>
+                                            <th>Entry</th>
+                                            <th>Final</th>
+                                            <th>PNL</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for position, quantity, entry_price, current_value, pnl in position_pnls %}
+                                            <tr>
+                                                <td>{{ quantity }} x {{ position }}</td>
+                                                <td>{{ "%.2f"|format(entry_price) if entry_price is not none else "N/A" }}</td>
+                                                <td>{{ "%.2f"|format(current_value) }}</td>
+                                                <td class="{{ 'text-success' if pnl and pnl > 0 else 'text-danger' if pnl and pnl < 0 else '' }}">
+                                                    {{ "%.2f"|format(pnl) if pnl is not none else "N/A" }}
+                                                </td>
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            {% endif %}
                         {% else %}
                             <p>No positions in portfolio</p>
                         {% endif %}

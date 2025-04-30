@@ -11,11 +11,19 @@ simulator = DiceSimulator()
 @app.route('/')
 def index():
     """Main page showing portfolio and game status"""
+    # Calculate portfolio value
+    portfolio_value = simulator.calculate_portfolio_value()
+    
+    # Calculate PNL if we have completed two rolls
+    total_pnl, position_pnls = simulator.calculate_portfolio_pnl() if len(simulator.rolls) >= 2 else (None, [])
+    
     return render_template('index.html', 
                           simulator=simulator,
-                          portfolio_value=simulator.calculate_portfolio_value(),
+                          portfolio_value=portfolio_value,
                           rolls=simulator.rolls,
                           total=simulator.get_total() if simulator.rolls else 0,
+                          total_pnl=total_pnl,
+                          position_pnls=position_pnls,
                           Call=Call,
                           Put=Put,
                           RiskReversal=RiskReversal,
