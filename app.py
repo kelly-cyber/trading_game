@@ -93,9 +93,19 @@ def roll_die():
     """Roll a single die"""
     value = request.form.get('value')
     if value:
-        simulator.roll_die(int(value))
+        value = int(value)
     else:
-        simulator.roll_die()
+        value = None
+        
+    simulator.roll_die(value)
+    
+    # If we've rolled two dice, calculate PNL
+    position_pnls = []
+    total_pnl = None
+    if len(simulator.rolls) == 2:
+        total_pnl, position_pnls = simulator.calculate_portfolio_pnl()
+    
+    flash(f'Rolled a {simulator.rolls[-1]}', 'success')
     return redirect(url_for('index'))
 
 @app.route('/reset', methods=['POST'])

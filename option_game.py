@@ -190,61 +190,64 @@ class Portfolio:
         """
         self.positions.append((position, quantity, entry_price))
         
-    def delta(self):
-        """Calculate the total delta of the portfolio."""
-        simulator = current_app.config.get('simulator')
-        first_roll = simulator.rolls[0] if simulator and len(simulator.rolls) == 1 else None
+    def delta(self, first_roll=None):
+        """
+        Calculate the total delta of the portfolio.
         
+        Args:
+            first_roll: Value of the first die if already rolled
+        """
         return sum(position.delta(first_roll) * quantity for position, quantity, _ in self.positions)
         
-    def vega(self):
-        """Calculate the total vega of the portfolio."""
-        simulator = current_app.config.get('simulator')
-        first_roll = simulator.rolls[0] if simulator and len(simulator.rolls) == 1 else None
+    def vega(self, first_roll=None):
+        """
+        Calculate the total vega of the portfolio.
         
+        Args:
+            first_roll: Value of the first die if already rolled
+        """
         return sum(position.vega(first_roll) * quantity for position, quantity, _ in self.positions)
-    
+        
     def calculate_pnl(self, current_values):
         """
-        Calculate profit and loss for each position and the total portfolio.
+        Calculate the PNL for each position and the total.
         
         Args:
             current_values: Dictionary mapping positions to their current values
             
         Returns:
-            tuple: (total_pnl, position_pnls)
-            where position_pnls is a list of (position, quantity, entry_price, current_value, pnl) tuples
+            tuple: (total_pnl, list of position PNLs)
         """
         position_pnls = []
         total_pnl = 0
         
         for position, quantity, entry_price in self.positions:
-            current_value = current_values.get(position, 0)
+            current_value = current_values[position]
             
-            # Calculate PNL
-            if entry_price is not None:
-                position_pnl = (current_value - entry_price) * quantity
-            else:
-                position_pnl = None  # Can't calculate PNL without entry price
-                
+            if entry_price is None:
+                # Skip positions without an entry price for PNL calculation
+                # but still include them in the results with None for PNL
+                position_pnls.append((position, quantity, entry_price, current_value, None))
+                continue
+            
+            position_pnl = (current_value - entry_price) * quantity
             position_pnls.append((position, quantity, entry_price, current_value, position_pnl))
+            total_pnl += position_pnl
             
-            if position_pnl is not None:
-                total_pnl += position_pnl
-                
         return total_pnl, position_pnls
-    
+        
     def __str__(self):
         """String representation of the portfolio."""
         if not self.positions:
-            return "Empty portfolio"
-        
-        result = "Portfolio:\n"
+            return "No positions in portfolio"
+            
+        result = []
         for position, quantity, entry_price in self.positions:
             prefix = "+" if quantity > 0 else ""
-            price_info = f" @ {entry_price:.2f}" if entry_price is not None else ""
-            result += f"  {prefix}{quantity} x {position}{price_info}\n"
-        return result.strip()
+            price_info = f" (entry: {entry_price:.2f})" if entry_price is not None else ""
+            result.append(f"{prefix}{quantity} x {position}{price_info}")
+            
+        return "\n".join(result)
 
 
 class DiceSimulator:

@@ -91,12 +91,11 @@
                                     <tbody>
                                         {% for position, quantity, entry_price, current_value, pnl in position_pnls %}
                                             <tr>
-                                                <td>{{ quantity }} x {{ position }}</td>
-                                                <td>{{ "%.2f"|format(entry_price) if entry_price is not none else "N/A" }}</td>
-                                                <td>{{ "%.2f"|format(current_value) }}</td>
-                                                <td class="{{ 'text-success' if pnl and pnl > 0 else 'text-danger' if pnl and pnl < 0 else '' }}">
-                                                    {{ "%.2f"|format(pnl) if pnl is not none else "N/A" }}
-                                                </td>
+                                                <td>{{ position }}</td>
+                                                <td>{{ quantity }}</td>
+                                                <td>{{ entry_price }}</td>
+                                                <td>{{ current_value }}</td>
+                                                <td>{{ pnl }}</td>
                                             </tr>
                                         {% endfor %}
                                     </tbody>
