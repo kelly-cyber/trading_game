@@ -399,4 +399,3 @@ class DiceSimulator:
         # Calculate PNL
         return self.portfolio.calculate_pnl(current_values)
 
-
