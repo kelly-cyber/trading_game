@@ -55,7 +55,7 @@ class Put(Option):
     def probability_in_the_money(self):
         """Probability that roll <= strike."""
         probs = self.calculate_probabilities()
-        return sum(probs[2:self.strike+1])
+        return sum(probs[self.strike+1:])-1
         
     def __str__(self):
         return f"{self.strike} put"
@@ -129,7 +129,7 @@ class Straddle:
         
     def delta(self):
         """Delta of straddle is call delta plus put delta."""
-        return self.call.delta() + self.put.delta() - 1  # Adjust for overlap
+        return self.call.delta() + self.put.delta() 
         
     def vega(self):
         """Vega of straddle is call vega plus put vega."""
@@ -149,7 +149,7 @@ class Strangle:
         
     def delta(self):
         """Delta of strangle is call delta plus put delta."""
-        return self.call.delta() + self.put.delta() - 1  # Adjust for overlap
+        return self.call.delta() + self.put.delta()
         
     def vega(self):
         """Vega of strangle is call vega plus put vega."""
