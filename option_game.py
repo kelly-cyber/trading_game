@@ -164,23 +164,24 @@ class Portfolio:
     def __init__(self):
         self.positions = []
         
-    def add_position(self, position, quantity=1):
+    def add_position(self, position, quantity=1, entry_price=None):
         """
         Add a position to the portfolio.
         
         Args:
             position: An option or option strategy
             quantity: Number of contracts (positive for long, negative for short)
+            entry_price: Price paid for the position (optional)
         """
-        self.positions.append((position, quantity))
+        self.positions.append((position, quantity, entry_price))
         
     def delta(self):
         """Calculate the total delta of the portfolio."""
-        return sum(position.delta() * quantity for position, quantity in self.positions)
+        return sum(position.delta() * quantity for position, quantity, _ in self.positions)
         
     def vega(self):
         """Calculate the total vega of the portfolio."""
-        return sum(position.vega() * quantity for position, quantity in self.positions)
+        return sum(position.vega() * quantity for position, quantity, _ in self.positions)
     
     def __str__(self):
         """String representation of the portfolio."""
@@ -188,9 +189,10 @@ class Portfolio:
             return "Empty portfolio"
         
         result = "Portfolio:\n"
-        for position, quantity in self.positions:
+        for position, quantity, entry_price in self.positions:
             prefix = "+" if quantity > 0 else ""
-            result += f"  {prefix}{quantity} x {position}\n"
+            price_info = f" @ {entry_price:.2f}" if entry_price is not None else ""
+            result += f"  {prefix}{quantity} x {position}{price_info}\n"
         return result.strip()
 
 
@@ -325,15 +327,16 @@ class DiceSimulator:
         self.bid_ask_spread = spread
         print(f"Bid-ask spread set to {spread:.2%}")
     
-    def add_to_portfolio(self, option, quantity=1):
+    def add_to_portfolio(self, option, quantity=1, entry_price=None):
         """Add an option position to the portfolio."""
-        self.portfolio.add_position(option, quantity)
-        print(f"Added {quantity} x {option} to portfolio")
+        self.portfolio.add_position(option, quantity, entry_price)
+        price_info = f" at price {entry_price:.2f}" if entry_price is not None else ""
+        print(f"Added {quantity} x {option}{price_info} to portfolio")
     
     def calculate_portfolio_value(self):
         """Calculate the current value of the entire portfolio."""
         total_value = 0
-        for position, quantity in self.portfolio.positions:
+        for position, quantity, _ in self.portfolio.positions:
             position_value = self.calculate_option_value(position) * quantity
             total_value += position_value
         return total_value

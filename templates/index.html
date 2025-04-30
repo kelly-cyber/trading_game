@@ -58,9 +58,12 @@
                     <div class="card-body">
                         {% if simulator.portfolio.positions %}
                             <ul class="list-group mb-3">
-                                {% for position, quantity in simulator.portfolio.positions %}
+                                {% for position, quantity, entry_price in simulator.portfolio.positions %}
                                     <li class="list-group-item d-flex justify-content-between align-items-center">
                                         {{ position }}
+                                        {% if entry_price is not none %}
+                                            <span class="badge bg-info rounded-pill me-2">@ {{ "%.2f"|format(entry_price) }}</span>
+                                        {% endif %}
                                         <span class="badge bg-primary rounded-pill">{{ quantity }}</span>
                                     </li>
                                 {% endfor %}
@@ -106,6 +109,10 @@
                                 <label for="call_quantity" class="form-label">Quantity</label>
                                 <input type="number" name="quantity" id="call_quantity" class="form-control" value="1" required>
                             </div>
+                            <div class="mb-3">
+                                <label for="call_entry_price" class="form-label">Entry Price</label>
+                                <input type="number" name="entry_price" id="call_entry_price" class="form-control" step="0.01" min="0">
+                            </div>
                             <button type="submit" class="btn btn-success">Add to Portfolio</button>
                         </form>
                         
@@ -119,6 +126,10 @@
                             <div class="mb-3">
                                 <label for="put_quantity" class="form-label">Quantity</label>
                                 <input type="number" name="quantity" id="put_quantity" class="form-control" value="1" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="put_entry_price" class="form-label">Entry Price</label>
+                                <input type="number" name="entry_price" id="put_entry_price" class="form-control" step="0.01" min="0">
                             </div>
                             <button type="submit" class="btn btn-success">Add to Portfolio</button>
                         </form>
@@ -138,6 +149,10 @@
                                 <label for="rr_quantity" class="form-label">Quantity</label>
                                 <input type="number" name="quantity" id="rr_quantity" class="form-control" value="1" required>
                             </div>
+                            <div class="mb-3">
+                                <label for="rr_entry_price" class="form-label">Entry Price</label>
+                                <input type="number" name="entry_price" id="rr_entry_price" class="form-control" step="0.01" min="0">
+                            </div>
                             <button type="submit" class="btn btn-success">Add to Portfolio</button>
                         </form>
                         
@@ -155,6 +170,10 @@
                             <div class="mb-3">
                                 <label for="cs_quantity" class="form-label">Quantity</label>
                                 <input type="number" name="quantity" id="cs_quantity" class="form-control" value="1" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="cs_entry_price" class="form-label">Entry Price</label>
+                                <input type="number" name="entry_price" id="cs_entry_price" class="form-control" step="0.01" min="0">
                             </div>
                             <button type="submit" class="btn btn-success">Add to Portfolio</button>
                         </form>
@@ -174,6 +193,10 @@
                                 <label for="ps_quantity" class="form-label">Quantity</label>
                                 <input type="number" name="quantity" id="ps_quantity" class="form-control" value="1" required>
                             </div>
+                            <div class="mb-3">
+                                <label for="ps_entry_price" class="form-label">Entry Price</label>
+                                <input type="number" name="entry_price" id="ps_entry_price" class="form-control" step="0.01" min="0">
+                            </div>
                             <button type="submit" class="btn btn-success">Add to Portfolio</button>
                         </form>
                         
@@ -187,6 +210,10 @@
                             <div class="mb-3">
                                 <label for="straddle_quantity" class="form-label">Quantity</label>
                                 <input type="number" name="quantity" id="straddle_quantity" class="form-control" value="1" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="straddle_entry_price" class="form-label">Entry Price</label>
+                                <input type="number" name="entry_price" id="straddle_entry_price" class="form-control" step="0.01" min="0">
                             </div>
                             <button type="submit" class="btn btn-success">Add to Portfolio</button>
                         </form>
@@ -205,6 +232,10 @@
                             <div class="mb-3">
                                 <label for="strangle_quantity" class="form-label">Quantity</label>
                                 <input type="number" name="quantity" id="strangle_quantity" class="form-control" value="1" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="strangle_entry_price" class="form-label">Entry Price</label>
+                                <input type="number" name="entry_price" id="strangle_entry_price" class="form-control" step="0.01" min="0">
                             </div>
                             <button type="submit" class="btn btn-success">Add to Portfolio</button>
                         </form>
