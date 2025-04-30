@@ -74,8 +74,8 @@ class RiskReversal:
         return self.put.delta() - self.call.delta()
         
     def vega(self):
-        """Vega of risk reversal is put vega plus call vega."""
-        return self.put.vega() + self.call.vega()
+        """Vega of risk reversal is put vega minus call vega."""
+        return self.put.vega() - self.call.vega()
         
     def __str__(self):
         return f"{self.put.strike}-{self.call.strike} risk reversal"
@@ -94,8 +94,8 @@ class CallSpread:
         return self.long_call.delta() - self.short_call.delta()
         
     def vega(self):
-        """Vega of call spread is long call vega plus short call vega."""
-        return self.long_call.vega() + self.short_call.vega()
+        """Vega of call spread is long call vega minus short call vega."""
+        return self.long_call.vega() - self.short_call.vega()
         
     def __str__(self):
         return f"{self.long_call.strike}-{self.short_call.strike} call spread"
@@ -114,8 +114,8 @@ class PutSpread:
         return self.long_put.delta() - self.short_put.delta()
         
     def vega(self):
-        """Vega of put spread is long put vega plus short put vega."""
-        return self.long_put.vega() + self.short_put.vega()
+        """Vega of put spread is long put vega minus short put vega."""
+        return self.long_put.vega() - self.short_put.vega()
         
     def __str__(self):
         return f"{self.long_put.strike}-{self.short_put.strike} put spread"
@@ -398,4 +398,26 @@ class DiceSimulator:
         
         # Calculate PNL
         return self.portfolio.calculate_pnl(current_values)
+
+    def get_option_analytics(self, option):
+        """
+        Calculate and return analytics for an option before adding to portfolio.
+        
+        Returns:
+            dict: Contains fair_value, delta, vega, and delta_neutral_quantity
+        """
+        fair_value = self.calculate_option_value(option)
+        delta = option.delta()
+        vega = option.vega()
+        
+        # Calculate delta-neutral quantity (negative of inverse delta)
+        # If delta is zero, we can't be delta neutral with this option
+        delta_neutral_quantity = -self.portfolio.delta()/delta if delta != 0 else 0
+        
+        return {
+            'fair_value': fair_value,
+            'delta': delta,
+            'vega': vega,
+            'delta_neutral_quantity': delta_neutral_quantity
+        }
 

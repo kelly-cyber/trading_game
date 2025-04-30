@@ -35,3 +35,40 @@ build/
 # Local development settings
 .env
 .env.local
+
+# MIT course files
+/Users/alexpodrez/Documents/School/MIT/Senior Yr/Spring/15.437/15.437.py
+/Users/alexpodrez/Documents/School/MIT/Senior Yr/Spring/15.437/Optional Assignment.docx
+/Users/alexpodrez/Documents/School/MIT/Senior Yr/Spring/15.437/Optional Assignment2.docx
+/Users/alexpodrez/Documents/School/MIT/Senior Yr/Spring/15.437/Optional Assignment2.pdf
+
+# Common Python files to ignore
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# OS specific files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db

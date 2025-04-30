@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, session
+from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify
 import numpy as np
 from option_game import Call, Put, RiskReversal, CallSpread, PutSpread, Straddle, Strangle, Portfolio, DiceSimulator
 
@@ -111,6 +111,61 @@ def reset():
 #     simulator.set_spread(spread)
 #     flash(f'Bid-ask spread set to {spread:.2%}', 'success')
 #     return redirect(url_for('index'))
+
+@app.route('/option_analytics', methods=['POST'])
+def option_analytics():
+    """Get analytics for an option before adding to portfolio"""
+    option_type = request.form.get('option_type')
+    
+    try:
+        # Create the option object based on form data
+        if option_type == 'call':
+            strike = int(request.form.get('strike'))
+            option = Call(strike)
+        elif option_type == 'put':
+            strike = int(request.form.get('strike'))
+            option = Put(strike)
+        elif option_type == 'risk_reversal':
+            put_strike = int(request.form.get('put_strike'))
+            call_strike = int(request.form.get('call_strike'))
+            option = RiskReversal(put_strike, call_strike)
+        elif option_type == 'call_spread':
+            lower_strike = int(request.form.get('lower_strike'))
+            higher_strike = int(request.form.get('higher_strike'))
+            option = CallSpread(lower_strike, higher_strike)
+        elif option_type == 'put_spread':
+            higher_strike = int(request.form.get('higher_strike'))
+            lower_strike = int(request.form.get('lower_strike'))
+            option = PutSpread(higher_strike, lower_strike)
+        elif option_type == 'straddle':
+            strike = int(request.form.get('strike'))
+            option = Straddle(strike)
+        elif option_type == 'strangle':
+            put_strike = int(request.form.get('put_strike'))
+            call_strike = int(request.form.get('call_strike'))
+            option = Strangle(put_strike, call_strike)
+        else:
+            return jsonify({'error': 'Invalid option type'}), 400
+        
+        # Calculate analytics
+        # fair_value = simulator.calculate_option_value(option)
+        # delta = option.delta()
+        # vega = option.vega()
+        
+        # Calculate delta-neutral quantity (negative of inverse delta)
+        analytics = simulator.get_option_analytics(option)
+        fair_value, delta, vega, delta_neutral_quantity = analytics['fair_value'], analytics['delta'], analytics['vega'], analytics['delta_neutral_quantity']
+        
+        return jsonify({
+            'option_name': str(option),
+            'fair_value': round(fair_value, 4),
+            'delta': round(delta, 4),
+            'vega': round(vega, 4),
+            'delta_neutral_quantity': round(delta_neutral_quantity)
+        })
+        
+    except ValueError as e:
+        return jsonify({'error': str(e)}), 400
 
 if __name__ == '__main__':
     app.run(debug=True, port=5001)
