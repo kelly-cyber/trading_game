@@ -1,35 +1,50 @@
 import numpy as np
+from flask import current_app
 
 class Option:
     """Base class for all options."""
     def __init__(self, strike):
         self.strike = strike
         
-    def calculate_probabilities(self):
-        """Calculate probability distribution for two dice."""
+    def calculate_probabilities(self, first_roll=None):
+        """
+        Calculate probability distribution for two dice.
+        
+        Args:
+            first_roll: Value of the first die if already rolled
+        """
         # Create a 6x6 grid of all possible dice combinations
         outcomes = np.zeros(13)  # Index 0 will be unused, outcomes[2] through outcomes[12]
         
-        for die1 in range(1, 7):
+        if first_roll is None:
+            # No dice rolled yet - standard distribution
+            for die1 in range(1, 7):
+                for die2 in range(1, 7):
+                    total = die1 + die2
+                    outcomes[total] += 1/36  # 36 possible combinations
+        else:
+            # First die already rolled - conditional distribution
             for die2 in range(1, 7):
-                total = die1 + die2
-                outcomes[total] += 1/36  # 36 possible combinations
+                total = first_roll + die2
+                outcomes[total] += 1/6  # 6 possible outcomes for second die
                 
         return outcomes
         
-    def probability_in_the_money(self):
+    def probability_in_the_money(self, first_roll=None):
         """Abstract method to be implemented by subclasses."""
         raise NotImplementedError
         
-    def delta(self):
+    def delta(self, first_roll=None):
         """Delta is the probability of being in the money."""
-        return self.probability_in_the_money()
+        return self.probability_in_the_money(first_roll)
         
-    def vega(self):
+    def vega(self, first_roll=None):
         """Vega is the probability that the roll equals the strike * 36."""
-        probs = self.calculate_probabilities()
+        probs = self.calculate_probabilities(first_roll)
         if 2 <= self.strike <= 12:
-            return probs[self.strike] * 36
+            # If first die is rolled, multiply by 6 instead of 36
+            multiplier = 6 if first_roll is not None else 36
+            return probs[self.strike] * multiplier
         return 0
 
 
@@ -38,9 +53,9 @@ class Call(Option):
     def __init__(self, strike):
         super().__init__(strike)
         
-    def probability_in_the_money(self):
+    def probability_in_the_money(self, first_roll=None):
         """Probability that roll >= strike."""
-        probs = self.calculate_probabilities()
+        probs = self.calculate_probabilities(first_roll)
         return sum(probs[self.strike:])
         
     def __str__(self):
@@ -52,10 +67,10 @@ class Put(Option):
     def __init__(self, strike):
         super().__init__(strike)
         
-    def probability_in_the_money(self):
+    def probability_in_the_money(self, first_roll=None):
         """Probability that roll <= strike."""
-        probs = self.calculate_probabilities()
-        return sum(probs[self.strike+1:])-1
+        probs = self.calculate_probabilities(first_roll)
+        return sum(probs[:self.strike+1])
         
     def __str__(self):
         return f"{self.strike} put"
@@ -69,13 +84,13 @@ class RiskReversal:
         self.put = Put(put_strike)
         self.call = Call(call_strike)
         
-    def delta(self):
+    def delta(self, first_roll=None):
         """Delta of risk reversal is put delta minus call delta."""
-        return self.put.delta() - self.call.delta()
+        return self.put.delta(first_roll) - self.call.delta(first_roll)
         
-    def vega(self):
+    def vega(self, first_roll=None):
         """Vega of risk reversal is put vega minus call vega."""
-        return self.put.vega() - self.call.vega()
+        return self.put.vega(first_roll) - self.call.vega(first_roll)
         
     def __str__(self):
         return f"{self.put.strike}-{self.call.strike} risk reversal"
@@ -89,13 +104,13 @@ class CallSpread:
         self.long_call = Call(lower_strike)
         self.short_call = Call(higher_strike)
         
-    def delta(self):
+    def delta(self, first_roll=None):
         """Delta of call spread is long call delta minus short call delta."""
-        return self.long_call.delta() - self.short_call.delta()
+        return self.long_call.delta(first_roll) - self.short_call.delta(first_roll)
         
-    def vega(self):
+    def vega(self, first_roll=None):
         """Vega of call spread is long call vega minus short call vega."""
-        return self.long_call.vega() - self.short_call.vega()
+        return self.long_call.vega(first_roll) - self.short_call.vega(first_roll)
         
     def __str__(self):
         return f"{self.long_call.strike}-{self.short_call.strike} call spread"
@@ -109,13 +124,13 @@ class PutSpread:
         self.long_put = Put(higher_strike)
         self.short_put = Put(lower_strike)
         
-    def delta(self):
+    def delta(self, first_roll=None):
         """Delta of put spread is long put delta minus short put delta."""
-        return self.long_put.delta() - self.short_put.delta()
+        return self.long_put.delta(first_roll) - self.short_put.delta(first_roll)
         
-    def vega(self):
+    def vega(self, first_roll=None):
         """Vega of put spread is long put vega minus short put vega."""
-        return self.long_put.vega() - self.short_put.vega()
+        return self.long_put.vega(first_roll) - self.short_put.vega(first_roll)
         
     def __str__(self):
         return f"{self.long_put.strike}-{self.short_put.strike} put spread"
@@ -127,13 +142,13 @@ class Straddle:
         self.call = Call(strike)
         self.put = Put(strike)
         
-    def delta(self):
+    def delta(self, first_roll=None):
         """Delta of straddle is call delta plus put delta."""
-        return self.call.delta() + self.put.delta() 
+        return self.call.delta(first_roll) + self.put.delta(first_roll) 
         
-    def vega(self):
+    def vega(self, first_roll=None):
         """Vega of straddle is call vega plus put vega."""
-        return self.call.vega() + self.put.vega()
+        return self.call.vega(first_roll) + self.put.vega(first_roll)
         
     def __str__(self):
         return f"{self.call.strike} straddle"
@@ -147,13 +162,13 @@ class Strangle:
         self.put = Put(put_strike)
         self.call = Call(call_strike)
         
-    def delta(self):
+    def delta(self, first_roll=None):
         """Delta of strangle is call delta plus put delta."""
-        return self.call.delta() + self.put.delta()
+        return self.call.delta(first_roll) + self.put.delta(first_roll)
         
-    def vega(self):
+    def vega(self, first_roll=None):
         """Vega of strangle is call vega plus put vega."""
-        return self.call.vega() + self.put.vega()
+        return self.call.vega(first_roll) + self.put.vega(first_roll)
         
     def __str__(self):
         return f"{self.put.strike}-{self.call.strike} strangle"
@@ -177,11 +192,17 @@ class Portfolio:
         
     def delta(self):
         """Calculate the total delta of the portfolio."""
-        return sum(position.delta() * quantity for position, quantity, _ in self.positions)
+        simulator = current_app.config.get('simulator')
+        first_roll = simulator.rolls[0] if simulator and len(simulator.rolls) == 1 else None
+        
+        return sum(position.delta(first_roll) * quantity for position, quantity, _ in self.positions)
         
     def vega(self):
         """Calculate the total vega of the portfolio."""
-        return sum(position.vega() * quantity for position, quantity, _ in self.positions)
+        simulator = current_app.config.get('simulator')
+        first_roll = simulator.rolls[0] if simulator and len(simulator.rolls) == 1 else None
+        
+        return sum(position.vega(first_roll) * quantity for position, quantity, _ in self.positions)
     
     def calculate_pnl(self, current_values):
         """
@@ -407,12 +428,16 @@ class DiceSimulator:
             dict: Contains fair_value, delta, vega, and delta_neutral_quantity
         """
         fair_value = self.calculate_option_value(option)
-        delta = option.delta()
-        vega = option.vega()
+        
+        # Pass the first roll to delta and vega calculations if available
+        first_roll = self.rolls[0] if len(self.rolls) == 1 else None
+        delta = option.delta(first_roll)
+        vega = option.vega(first_roll)
         
         # Calculate delta-neutral quantity (negative of inverse delta)
         # If delta is zero, we can't be delta neutral with this option
-        delta_neutral_quantity = -self.portfolio.delta()/delta if delta != 0 else 0
+        portfolio_delta = self.portfolio.delta(first_roll)
+        delta_neutral_quantity = -portfolio_delta/delta if delta != 0 else 0
         
         return {
             'fair_value': fair_value,

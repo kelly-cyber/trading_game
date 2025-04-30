@@ -8,6 +8,9 @@ app.secret_key = 'dice_options_game_secret_key'
 # Create a global simulator that persists between requests
 simulator = DiceSimulator()
 
+# Add this after creating the simulator
+app.config['simulator'] = simulator
+
 @app.route('/')
 def index():
     """Main page showing portfolio and game status"""
