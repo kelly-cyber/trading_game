@@ -29,6 +29,13 @@ def add_option():
     """Add an option to the portfolio"""
     option_type = request.form.get('option_type')
     quantity = int(request.form.get('quantity', 1))
+    entry_price = request.form.get('entry_price')
+    
+    # Convert entry_price to float if provided
+    if entry_price and entry_price.strip():
+        entry_price = float(entry_price)
+    else:
+        entry_price = None
     
     try:
         if option_type == 'call':
@@ -60,8 +67,10 @@ def add_option():
             flash('Invalid option type', 'error')
             return redirect(url_for('index'))
             
-        simulator.add_to_portfolio(option, quantity)
-        flash(f'Added {quantity} x {option} to portfolio', 'success')
+        simulator.add_to_portfolio(option, quantity, entry_price)
+        
+        price_info = f" at price {entry_price:.2f}" if entry_price is not None else ""
+        flash(f'Added {quantity} x {option}{price_info} to portfolio', 'success')
         
     except ValueError as e:
         flash(f'Error: {str(e)}', 'error')
