@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dice Options Game</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .option-form {
+            display: none;
+        }
+        .active {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-4">
+        <h1 class="mb-4">Dice Options Trading Simulator</h1>
+        
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ 'success' if category == 'success' else 'danger' }}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+        
+        <div class="row">
+            <!-- Game Status -->
+            <div class="col-md-4">
+                <div class="card mb-4">
+                    <div class="card-header">Game Status</div>
+                    <div class="card-body">
+                        <p><strong>Rolls:</strong> {{ rolls|join(', ') if rolls else 'No rolls yet' }}</p>
+                        <p><strong>Current Total:</strong> {{ total }}</p>
+                        
+                        <form action="{{ url_for('roll_die') }}" method="post" class="mb-3">
+                            <div class="input-group">
+                                <input type="number" name="value" class="form-control" min="1" max="6" placeholder="Roll value (optional)">
+                                <button type="submit" class="btn btn-primary">Roll Die</button>
+                            </div>
+                        </form>
+                        
+                        <form action="{{ url_for('reset') }}" method="post">
+                            <button type="submit" class="btn btn-danger">Reset Game</button>
+                        </form>
+                    </div>
+                </div>
+                
+                <div class="card mb-4">
+                    <div class="card-header">Market Settings</div>
+                    <div class="card-body">
+                        <form action="{{ url_for('set_spread') }}" method="post">
+                            <div class="mb-3">
+                                <label for="spread" class="form-label">Bid-Ask Spread</label>
+                                <div class="input-group">
+                                    <input type="number" step="0.01" min="0" max="1" name="spread" id="spread" 
+                                           class="form-control" value="{{ simulator.bid_ask_spread }}">
+                                    <button type="submit" class="btn btn-primary">Set</button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Portfolio -->
+            <div class="col-md-4">
+                <div class="card mb-4">
+                    <div class="card-header">Portfolio</div>
+                    <div class="card-body">
+                        {% if simulator.portfolio.positions %}
+                            <ul class="list-group mb-3">
+                                {% for position, quantity in simulator.portfolio.positions %}
+                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                        {{ position }}
+                                        <span class="badge bg-primary rounded-pill">{{ quantity }}</span>
+                                    </li>
+                                {% endfor %}
+                            </ul>
+                            
+                            <p><strong>Portfolio Value:</strong> {{ "%.2f"|format(portfolio_value) }}</p>
+                            <p><strong>Delta:</strong> {{ "%.4f"|format(simulator.portfolio.delta()) }}</p>
+                            <p><strong>Vega:</strong> {{ "%.4f"|format(simulator.portfolio.vega()) }}</p>
+                        {% else %}
+                            <p>No positions in portfolio</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Add Options -->
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-header">Add Position</div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label for="option_selector" class="form-label">Option Type</label>
+                            <select id="option_selector" class="form-select" onchange="showOptionForm()">
+                                <option value="">Select option type</option>
+                                <option value="call">Call</option>
+                                <option value="put">Put</option>
+                                <option value="risk_reversal">Risk Reversal</option>
+                                <option value="call_spread">Call Spread</option>
+                                <option value="put_spread">Put Spread</option>
+                                <option value="straddle">Straddle</option>
+                                <option value="strangle">Strangle</option>
+                            </select>
+                        </div>
+                        
+                        <!-- Call Form -->
+                        <form action="{{ url_for('add_option') }}" method="post" id="call-form" class="option-form">
+                            <input type="hidden" name="option_type" value="call">
+                            <div class="mb-3">
+                                <label for="call_strike" class="form-label">Strike</label>
+                                <input type="number" name="strike" id="call_strike" class="form-control" min="2" max="12" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="call_quantity" class="form-label">Quantity</label>
+                                <input type="number" name="quantity" id="call_quantity" class="form-control" value="1" required>
+                            </div>
+                            <button type="submit" class="btn btn-success">Add to Portfolio</button>
+                        </form>
+                        
+                        <!-- Put Form -->
+                        <form action="{{ url_for('add_option') }}" method="post" id="put-form" class="option-form">
+                            <input type="hidden" name="option_type" value="put">
+                            <div class="mb-3">
+                                <label for="put_strike" class="form-label">Strike</label>
+                                <input type="number" name="strike" id="put_strike" class="form-control" min="2" max="12" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="put_quantity" class="form-label">Quantity</label>
+                                <input type="number" name="quantity" id="put_quantity" class="form-control" value="1" required>
+                            </div>
+                            <button type="submit" class="btn btn-success">Add to Portfolio</button>
+                        </form>
+                        
+                        <!-- Risk Reversal Form -->
+                        <form action="{{ url_for('add_option') }}" method="post" id="risk_reversal-form" class="option-form">
+                            <input type="hidden" name="option_type" value="risk_reversal">
+                            <div class="mb-3">
+                                <label for="rr_put_strike" class="form-label">Put Strike</label>
+                                <input type="number" name="put_strike" id="rr_put_strike" class="form-control" min="2" max="12" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="rr_call_strike" class="form-label">Call Strike</label>
+                                <input type="number" name="call_strike" id="rr_call_strike" class="form-control" min="2" max="12" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="rr_quantity" class="form-label">Quantity</label>
+                                <input type="number" name="quantity" id="rr_quantity" class="form-control" value="1" required>
+                            </div>
+                            <button type="submit" class="btn btn-success">Add to Portfolio</button>
+                        </form>
+                        
+                        <!-- Call Spread Form -->
+                        <form action="{{ url_for('add_option') }}" method="post" id="call_spread-form" class="option-form">
+                            <input type="hidden" name="option_type" value="call_spread">
+                            <div class="mb-3">
+                                <label for="cs_lower_strike" class="form-label">Lower Strike</label>
+                                <input type="number" name="lower_strike" id="cs_lower_strike" class="form-control" min="2" max="12" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="cs_higher_strike" class="form-label">Higher Strike</label>
+                                <input type="number" name="higher_strike" id="cs_higher_strike" class="form-control" min="2" max="12" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="cs_quantity" class="form-label">Quantity</label>
+                                <input type="number" name="quantity" id="cs_quantity" class="form-control" value="1" required>
+                            </div>
+                            <button type="submit" class="btn btn-success">Add to Portfolio</button>
+                        </form>
+                        
+                        <!-- Put Spread Form -->
+                        <form action="{{ url_for('add_option') }}" method="post" id="put_spread-form" class="option-form">
+                            <input type="hidden" name="option_type" value="put_spread">
+                            <div class="mb-3">
+                                <label for="ps_higher_strike" class="form-label">Higher Strike</label>
+                                <input type="number" name="higher_strike" id="ps_higher_strike" class="form-control" min="2" max="12" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="ps_lower_strike" class="form-label">Lower Strike</label>
+                                <input type="number" name="lower_strike" id="ps_lower_strike" class="form-control" min="2" max="12" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="ps_quantity" class="form-label">Quantity</label>
+                                <input type="number" name="quantity" id="ps_quantity" class="form-control" value="1" required>
+                            </div>
+                            <button type="submit" class="btn btn-success">Add to Portfolio</button>
+                        </form>
+                        
+                        <!-- Straddle Form -->
+                        <form action="{{ url_for('add_option') }}" method="post" id="straddle-form" class="option-form">
+                            <input type="hidden" name="option_type" value="straddle">
+                            <div class="mb-3">
+                                <label for="straddle_strike" class="form-label">Strike</label>
+                                <input type="number" name="strike" id="straddle_strike" class="form-control" min="2" max="12" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="straddle_quantity" class="form-label">Quantity</label>
+                                <input type="number" name="quantity" id="straddle_quantity" class="form-control" value="1" required>
+                            </div>
+                            <button type="submit" class="btn btn-success">Add to Portfolio</button>
+                        </form>
+                        
+                        <!-- Strangle Form -->
+                        <form action="{{ url_for('add_option') }}" method="post" id="strangle-form" class="option-form">
+                            <input type="hidden" name="option_type" value="strangle">
+                            <div class="mb-3">
+                                <label for="strangle_put_strike" class="form-label">Put Strike</label>
+                                <input type="number" name="put_strike" id="strangle_put_strike" class="form-control" min="2" max="12" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="strangle_call_strike" class="form-label">Call Strike</label>
+                                <input type="number" name="call_strike" id="strangle_call_strike" class="form-control" min="2" max="12" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="strangle_quantity" class="form-label">Quantity</label>
+                                <input type="number" name="quantity" id="strangle_quantity" class="form-control" value="1" required>
+                            </div>
+                            <button type="submit" class="btn btn-success">Add to Portfolio</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Market Prices -->
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">Market Prices</div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <h5>Calls</h5>
+                                <table class="table table-sm">
+                                    <thead>
+                                        <tr>
+                                            <th>Strike</th>
+                                            <th>Bid</th>
+                                            <th>Ask</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for strike in range(2, 13) %}
+                                            {% set call = Call(strike) %}
+                                            {% set bid, ask = simulator.get_market_prices(call) %}
+                                            <tr>
+                                                <td>{{ strike }}</td>
+                                                <td>{{ bid }}</td>
+                                                <td>{{ ask }}</td>
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="col-md-4">
+                                <h5>Puts</h5>
+                                <table class="table table-sm">
+                                    <thead>
+                                        <tr>
+                                            <th>Strike</th>
+                                            <th>Bid</th>
+                                            <th>Ask</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for strike in range(2, 13) %}
+                                            {% set put = Put(strike) %}
+                                            {% set bid, ask = simulator.get_market_prices(put) %}
+                                            <tr>
+                                                <td>{{ strike }}</td>
+                                                <td>{{ bid }}</td>
+                                                <td>{{ ask }}</td>
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="col-md-4">
+                                <h5>Straddles</h5>
+                                <table class="table table-sm">
+                                    <thead>
+                                        <tr>
+                                            <th>Strike</th>
+                                            <th>Bid</th>
+                                            <th>Ask</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for strike in range(2, 13) %}
+                                            {% set straddle = Straddle(strike) %}
+                                            {% set bid, ask = simulator.get_market_prices(straddle) %}
+                                            <tr>
+                                                <td>{{ strike }}</td>
+                                                <td>{{ bid }}</td>
+                                                <td>{{ ask }}</td>
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        function showOptionForm() {
+            // Hide all forms
+            document.querySelectorAll('.option-form').forEach(form => {
+                form.classList.remove('active');
+            });
+            
+            // Show selected form
+            const selectedOption = document.getElementById('option_selector').value;
+            if (selectedOption) {
+                document.getElementById(`${selectedOption}-form`).classList.add('active');
+            }
+        }
+    </script>
+</body>
+</html> 
+</html> 
