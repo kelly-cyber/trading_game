@@ -183,6 +183,36 @@ class Portfolio:
         """Calculate the total vega of the portfolio."""
         return sum(position.vega() * quantity for position, quantity, _ in self.positions)
     
+    def calculate_pnl(self, current_values):
+        """
+        Calculate profit and loss for each position and the total portfolio.
+        
+        Args:
+            current_values: Dictionary mapping positions to their current values
+            
+        Returns:
+            tuple: (total_pnl, position_pnls)
+            where position_pnls is a list of (position, quantity, entry_price, current_value, pnl) tuples
+        """
+        position_pnls = []
+        total_pnl = 0
+        
+        for position, quantity, entry_price in self.positions:
+            current_value = current_values.get(position, 0)
+            
+            # Calculate PNL
+            if entry_price is not None:
+                position_pnl = (current_value - entry_price) * quantity
+            else:
+                position_pnl = None  # Can't calculate PNL without entry price
+                
+            position_pnls.append((position, quantity, entry_price, current_value, position_pnl))
+            
+            if position_pnl is not None:
+                total_pnl += position_pnl
+                
+        return total_pnl, position_pnls
+    
     def __str__(self):
         """String representation of the portfolio."""
         if not self.positions:
@@ -354,5 +384,19 @@ class DiceSimulator:
         if len(self.rolls) > 0:
             print(f"\nCurrent Rolls: {self.rolls}")
             print(f"Current Total: {self.get_total()}")
+
+    def calculate_portfolio_pnl(self):
+        """Calculate the PNL for the entire portfolio."""
+        # Only calculate PNL if we have completed two rolls
+        if len(self.rolls) < 2:
+            return None, []
+        
+        # Calculate current values for all positions
+        current_values = {}
+        for position, _, _ in self.portfolio.positions:
+            current_values[position] = self.calculate_option_value(position)
+        
+        # Calculate PNL
+        return self.portfolio.calculate_pnl(current_values)
 
 
