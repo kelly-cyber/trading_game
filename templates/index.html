@@ -146,15 +146,75 @@
                         </div>
                         
                         <!-- Option Analytics Display -->
-                        <div id="option-analytics" class="mt-4" style="display: none;">
-                            <div class="card">
-                                <div class="card-header bg-info text-white">Option Analytics</div>
-                                <div class="card-body">
-                                    <p><strong>Option:</strong> <span id="option-name"></span></p>
-                                    <p><strong>Fair Value:</strong> <span id="fair-value"></span></p>
-                                    <p><strong>Delta:</strong> <span id="option-delta"></span></p>
-                                    <p><strong>Vega:</strong> <span id="option-vega"></span></p>
-                                    <p><strong>Delta Neutral Quantity:</strong> <span id="delta-neutral-quantity"></span></p>
+                        <div id="option-analytics" class="mt-3" style="display: none;">
+                            <h4>Option Analytics</h4>
+                            
+                            <!-- Per Contract Section -->
+                            <h5>Per Contract</h5>
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <div class="card mb-2">
+                                        <div class="card-header">Fair Value</div>
+                                        <div class="card-body" id="fair-value-per"></div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="card mb-2">
+                                        <div class="card-header">Bid</div>
+                                        <div class="card-body" id="bid-price-per"></div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="card mb-2">
+                                        <div class="card-header">Ask</div>
+                                        <div class="card-body" id="ask-price-per"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Total Position Section -->
+                            <h5>Total Position</h5>
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <div class="card mb-2">
+                                        <div class="card-header">Fair Value</div>
+                                        <div class="card-body" id="fair-value-total"></div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="card mb-2">
+                                        <div class="card-header">Bid</div>
+                                        <div class="card-body" id="bid-price-total"></div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="card mb-2">
+                                        <div class="card-header">Ask</div>
+                                        <div class="card-body" id="ask-price-total"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Risk Metrics Section -->
+                            <h5>Risk Metrics</h5>
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <div class="card mb-2">
+                                        <div class="card-header">Total Delta</div>
+                                        <div class="card-body" id="total-delta"></div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="card mb-2">
+                                        <div class="card-header">Total Vega</div>
+                                        <div class="card-body" id="total-vega"></div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="card mb-2">
+                                        <div class="card-header">Delta Neutral Qty</div>
+                                        <div class="card-body" id="delta-neutral"></div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -374,30 +434,26 @@
                 }
                 
                 // Update the analytics display
-                document.getElementById('option-name').textContent = data.option_name;
-                document.getElementById('fair-value').textContent = data.fair_value;
-                document.getElementById('option-delta').textContent = data.delta;
-                document.getElementById('option-vega').textContent = data.vega;
-                document.getElementById('delta-neutral-quantity').textContent = data.delta_neutral_quantity;
-                
-                // Show the analytics display
-                document.getElementById('option-analytics').style.display = 'block';
-                
-                // Optionally update the quantity field with delta neutral quantity
-                if (data.delta_neutral_quantity !== 0) {
-                    const quantityInput = form.querySelector('input[name="quantity"]');
-                    if (confirm(`Set quantity to delta-neutral value of ${data.delta_neutral_quantity}?`)) {
-                        quantityInput.value = data.delta_neutral_quantity;
-                    }
-                }
-                
-                // Scroll to the analytics section
-                document.getElementById('option-analytics').scrollIntoView({ behavior: 'smooth' });
+                displayOptionAnalytics(data);
             })
             .catch(error => {
                 console.error('Error:', error);
                 alert('An error occurred while fetching analytics');
             });
+        }
+        
+        function displayOptionAnalytics(data) {
+            document.getElementById('fair-value-per').textContent = data.fair_value_per;
+            document.getElementById('bid-price-per').textContent = data.bid_per;
+            document.getElementById('ask-price-per').textContent = data.ask_per;
+            document.getElementById('fair-value-total').textContent = data.fair_value_total;
+            document.getElementById('bid-price-total').textContent = data.bid_total;
+            document.getElementById('ask-price-total').textContent = data.ask_total;
+            document.getElementById('total-delta').textContent = data.total_delta;
+            document.getElementById('total-vega').textContent = data.total_vega;
+            document.getElementById('delta-neutral').textContent = data.delta_neutral;
+            
+            document.getElementById('option-analytics').style.display = 'block';
         }
     </script>
 </body>

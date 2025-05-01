@@ -147,6 +147,7 @@ def reset():
 def option_analytics():
     """Get analytics for an option before adding to portfolio"""
     option_type = request.form.get('option_type')
+    quantity = int(request.form.get('quantity', 1))  # Default to 1 if not provided
     
     try:
         # Create the option object based on form data
@@ -178,21 +179,23 @@ def option_analytics():
         else:
             return jsonify({'error': 'Invalid option type'}), 400
         
-        # Calculate analytics
-        # fair_value = simulator.calculate_option_value(option)
-        # delta = option.delta()
-        # vega = option.vega()
+        # Calculate analytics with quantity
+        analytics = simulator.get_option_analytics(option, quantity)
         
-        # Calculate delta-neutral quantity (negative of inverse delta)
-        analytics = simulator.get_option_analytics(option)
-        fair_value, delta, vega, delta_neutral_quantity = analytics['fair_value'], analytics['delta'], analytics['vega'], analytics['delta_neutral_quantity']
-        
+        # Return the analytics including per-contract and total values
         return jsonify({
             'option_name': str(option),
-            'fair_value': round(fair_value, 4),
-            'delta': round(delta, 4),
-            'vega': round(vega, 4),
-            'delta_neutral_quantity': round(delta_neutral_quantity)
+            'fair_value_per': round(analytics['fair_value_per'], 4),
+            'fair_value_total': round(analytics['fair_value_total'], 4),
+            'bid_per': round(analytics['bid_per'], 4),
+            'ask_per': round(analytics['ask_per'], 4),
+            'bid_total': round(analytics['bid_total'], 4),
+            'ask_total': round(analytics['ask_total'], 4),
+            'delta': round(analytics['delta_per_contract'], 4),
+            'vega': round(analytics['vega_per_contract'], 4),
+            'total_delta': round(analytics['total_delta'], 4),
+            'total_vega': round(analytics['total_vega'], 4),
+            'delta_neutral': round(analytics['delta_neutral_quantity'], 2)
         })
         
     except ValueError as e:
