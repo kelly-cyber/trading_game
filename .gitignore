@@ -44,4 +44,6 @@ __pycache__/
 .DS_Store
 .ipynb_checkpoints/
 *.zip
-Optional Assignment2.pdf
+*.pdf
+*.docx
+
