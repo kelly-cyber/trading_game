@@ -12,11 +12,29 @@
         .active {
             display: block;
         }
+        .logo {
+            max-width: 200px;
+            margin-bottom: 15px;
+        }
+        .team-members {
+            font-size: 0.9rem;
+            margin-bottom: 20px;
+        }
     </style>
 </head>
 <body>
     <div class="container mt-4">
-        <h1 class="mb-4">Dice Options Trading Simulator</h1>
+        <!-- Logo and Team Members -->
+        <div class="row mb-3">
+            <div class="col-md-12">
+                <img src="{{ url_for('static', filename='images/mit_sloan_logo.jpg') }}" alt="MIT Sloan School of Management" class="logo">
+                <div class="team-members">
+                    <strong>Team Members:</strong> Alexander Podrez, Jiaxin Xu, Rohan Chikkam, Felix Schmedding, Kelly Zhang, Giuseppe Albanese, Natalie Fang, Jialei Lan, Prabhav Kumar
+                </div>
+            </div>
+        </div>
+        
+        <h1 class="mb-4 text-center">Dice Options Trading Simulator</h1>
         
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
