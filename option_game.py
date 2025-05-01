@@ -74,7 +74,7 @@ class Put(Option):
     def delta(self, first_roll=None):
         """Probability that roll <= strike."""
         probs = self.calculate_probabilities(first_roll)
-        return sum(probs[:self.strike])-1
+        return -sum(probs[:self.strike+1])
         
     def __str__(self):
         return f"{self.strike} put"

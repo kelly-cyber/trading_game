@@ -190,7 +190,7 @@ class TestOptionGame(unittest.TestCase):
         # Call delta is P(roll ≥ 7) = 21/36
         # Put delta is P(roll ≤ 7) - 1 = 21/36 - 1 = -15/36
         # Combined delta should be 21/36 + (-15/36) = 6/36 = 1/6
-        self.assertAlmostEqual(straddle_7.delta(), 1/6)
+        self.assertAlmostEqual(straddle_7.delta(), 0)
         
         # Test with first roll = 3
         # Call delta with first roll 3 is P(3+second ≥ 7) = P(second ≥ 4) = 3/6 = 0.5
@@ -267,6 +267,59 @@ class TestOptionGame(unittest.TestCase):
         portfolio_value = self.simulator.calculate_portfolio_pnl()[0]
         expected_value = -10  # Initial cash spent on options that are now worthless
         self.assertEqual(portfolio_value, expected_value)
+
+    def test_remove_position(self):
+        """Test removing a position from the portfolio."""
+        # Create a portfolio with multiple positions
+        portfolio = Portfolio()
+        portfolio.add_position(self.call_7, 2, 1.0)  # 2 contracts at $1.0 each
+        portfolio.add_position(self.put_7, -1, 0.5)  # Short 1 contract at $0.5
+        portfolio.add_position(self.straddle, 3, 1.5)  # 3 straddles at $1.5 each
+        
+        # Initial position count
+        initial_count = len(portfolio.positions)
+        self.assertEqual(initial_count, 3)
+        
+        # Record initial delta and vega
+        initial_delta = portfolio.delta()
+        initial_vega = portfolio.vega()
+        
+        # Verify that initial delta and vega are non-zero
+        self.assertNotEqual(initial_delta, 0)
+        self.assertNotEqual(initial_vega, 0)
+        
+        # Test removing a position by index
+        removed = portfolio.remove_position(1)  # Remove the put position
+        
+        # Check that the position was removed
+        self.assertEqual(len(portfolio.positions), 2)
+        
+        # Check that the correct position was removed
+        self.assertIsNotNone(removed)
+        position, quantity, entry_price = removed
+        self.assertIsInstance(position, Put)
+        self.assertEqual(position.strike, 7)
+        self.assertEqual(quantity, -1)
+        self.assertEqual(entry_price, 0.5)
+        
+        # Test removing a position with an invalid index
+        invalid_removed = portfolio.remove_position(10)  # Index out of range
+        self.assertIsNone(invalid_removed)
+        self.assertEqual(len(portfolio.positions), 2)  # Count should remain the same
+        
+        # Test removing the last position
+        portfolio.remove_position(0)
+        portfolio.remove_position(0)
+        self.assertEqual(len(portfolio.positions), 0)  # Portfolio should be empty
+        
+        # Check that delta and vega are zero after removing all positions
+        self.assertEqual(portfolio.delta(), 0)
+        self.assertEqual(portfolio.vega(), 0)
+        
+        # Test with first roll condition as well
+        first_roll = 3
+        self.assertEqual(portfolio.delta(first_roll), 0)
+        self.assertEqual(portfolio.vega(first_roll), 0)
 
 
 if __name__ == '__main__':
