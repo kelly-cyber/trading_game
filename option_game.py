@@ -62,6 +62,9 @@ class Call(Option):
     def __str__(self):
         return f"{self.strike} call"
 
+    def to_dict(self):
+        return {'strike': self.strike}
+
 
 class Put(Option):
     """Put option - pays off when roll is less than or equal to strike."""
@@ -75,6 +78,9 @@ class Put(Option):
         
     def __str__(self):
         return f"{self.strike} put"
+
+    def to_dict(self):
+        return {'strike': self.strike}
 
 
 class RiskReversal:
@@ -96,6 +102,9 @@ class RiskReversal:
     def __str__(self):
         return f"{self.put.strike}-{self.call.strike} risk reversal"
 
+    def to_dict(self):
+        return {'put_strike': self.put.strike, 'call_strike': self.call.strike}
+
 
 class CallSpread:
     """Long a call, short a call with a higher strike."""
@@ -115,6 +124,9 @@ class CallSpread:
         
     def __str__(self):
         return f"{self.long_call.strike}-{self.short_call.strike} call spread"
+
+    def to_dict(self):
+        return {'lower_strike': self.long_call.strike, 'higher_strike': self.short_call.strike}
 
 
 class PutSpread:
@@ -136,6 +148,9 @@ class PutSpread:
     def __str__(self):
         return f"{self.long_put.strike}-{self.short_put.strike} put spread"
 
+    def to_dict(self):
+        return {'higher_strike': self.long_put.strike, 'lower_strike': self.short_put.strike}
+
 
 class Straddle:
     """Long a call and a put with the same strike."""
@@ -153,6 +168,9 @@ class Straddle:
         
     def __str__(self):
         return f"{self.call.strike} straddle"
+
+    def to_dict(self):
+        return {'strike': self.call.strike}
 
 
 class Strangle:
@@ -173,6 +191,9 @@ class Strangle:
         
     def __str__(self):
         return f"{self.put.strike}-{self.call.strike} strangle"
+
+    def to_dict(self):
+        return {'put_strike': self.put.strike, 'call_strike': self.call.strike}
 
 
 class Portfolio:
@@ -249,6 +270,46 @@ class Portfolio:
             result.append(f"{prefix}{quantity} x {position}{price_info}")
             
         return "\n".join(result)
+
+    def to_dict(self):
+        """Convert portfolio to a dictionary for session storage"""
+        positions = []
+        for position, quantity, entry_price in self.positions:
+            positions.append({
+                'position_type': position.__class__.__name__,
+                'position_params': position.to_dict(),
+                'quantity': quantity,
+                'entry_price': entry_price
+            })
+        return {'positions': positions}
+
+    @classmethod
+    def from_dict(cls, data):
+        """Create a portfolio from a dictionary"""
+        portfolio = cls()
+        for pos_data in data['positions']:
+            position_type = pos_data['position_type']
+            position_params = pos_data['position_params']
+            
+            # Create the appropriate option object
+            if position_type == 'Call':
+                position = Call(position_params['strike'])
+            elif position_type == 'Put':
+                position = Put(position_params['strike'])
+            elif position_type == 'RiskReversal':
+                position = RiskReversal(position_params['put_strike'], position_params['call_strike'])
+            elif position_type == 'CallSpread':
+                position = CallSpread(position_params['lower_strike'], position_params['higher_strike'])
+            elif position_type == 'PutSpread':
+                position = PutSpread(position_params['higher_strike'], position_params['lower_strike'])
+            elif position_type == 'Straddle':
+                position = Straddle(position_params['strike'])
+            elif position_type == 'Strangle':
+                position = Strangle(position_params['put_strike'], position_params['call_strike'])
+            
+            portfolio.add_position(position, pos_data['quantity'], pos_data['entry_price'])
+        
+        return portfolio
 
 
 class DiceSimulator:
@@ -481,3 +542,20 @@ class DiceSimulator:
         ask_price = mid_price + HALF_SPREAD
 
         return bid_price, ask_price
+
+    def to_dict(self):
+        """Convert simulator to a dictionary for session storage"""
+        return {
+            'rolls': self.rolls.copy(),
+            'portfolio': self.portfolio.to_dict(),
+            'spread': HALF_SPREAD  # Store the spread value
+        }
+
+    @classmethod
+    def from_dict(cls, data):
+        """Create a simulator from a dictionary"""
+        simulator = cls()
+        simulator.rolls = data['rolls']
+        simulator.portfolio = Portfolio.from_dict(data['portfolio'])
+        # No need to set spread as it's a constant now
+        return simulator

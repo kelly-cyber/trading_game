@@ -5,15 +5,30 @@ from option_game import Call, Put, RiskReversal, CallSpread, PutSpread, Straddle
 app = Flask(__name__)
 app.secret_key = 'dice_options_game_secret_key'
 
-# Create a global simulator that persists between requests
-simulator = DiceSimulator()
+# Remove the global simulator
+# Instead, we'll create a simulator per session
 
-# Add this after creating the simulator
-app.config['simulator'] = simulator
+def get_simulator():
+    """Get or create a simulator for the current session"""
+    if 'simulator' not in session:
+        # Initialize a new simulator for this session
+        session['simulator'] = DiceSimulator().to_dict()
+    
+    # Convert the dictionary back to a DiceSimulator object
+    simulator_dict = session['simulator']
+    simulator = DiceSimulator.from_dict(simulator_dict)
+    return simulator
+
+def save_simulator(simulator):
+    """Save the simulator state to the session"""
+    session['simulator'] = simulator.to_dict()
 
 @app.route('/')
 def index():
     """Main page showing portfolio and game status"""
+    # Get the simulator for this session
+    simulator = get_simulator()
+    
     # Calculate portfolio value
     portfolio_value = simulator.calculate_portfolio_value()
     
@@ -56,6 +71,9 @@ def index():
 @app.route('/add_option', methods=['POST'])
 def add_option():
     """Add an option to the portfolio"""
+    # Get the simulator for this session
+    simulator = get_simulator()
+    
     option_type = request.form.get('option_type')
     quantity = int(request.form.get('quantity', 1))
     entry_price = request.form.get('entry_price')
@@ -98,6 +116,9 @@ def add_option():
             
         simulator.add_to_portfolio(option, quantity, entry_price)
         
+        # Save the updated simulator state
+        save_simulator(simulator)
+        
         price_info = f" at price {entry_price:.2f}" if entry_price is not None else ""
         flash(f'Added {quantity} x {option}{price_info} to portfolio', 'success')
         
@@ -109,6 +130,9 @@ def add_option():
 @app.route('/roll_die', methods=['POST'])
 def roll_die():
     """Roll a single die"""
+    # Get the simulator for this session
+    simulator = get_simulator()
+    
     value = request.form.get('value')
     if value:
         value = int(value)
@@ -123,29 +147,34 @@ def roll_die():
     if len(simulator.rolls) == 2:
         total_pnl, position_pnls = simulator.calculate_portfolio_pnl()
     
+    # Save the updated simulator state
+    save_simulator(simulator)
+    
     flash(f'Rolled a {simulator.rolls[-1]}', 'success')
     return redirect(url_for('index'))
 
 @app.route('/reset', methods=['POST'])
 def reset():
     """Reset the simulator"""
+    # Get the simulator for this session
+    simulator = get_simulator()
+    
     simulator.reset_rolls()
     # Create a new portfolio
     simulator.portfolio = Portfolio()
+    
+    # Save the updated simulator state
+    save_simulator(simulator)
+    
     flash('Game reset', 'success')
     return redirect(url_for('index'))
-
-# @app.route('/set_spread', methods=['POST'])
-# def set_spread():
-#     """Set the bid-ask spread"""
-#     spread = float(request.form.get('spread', 0.05))
-#     simulator.set_spread(spread)
-#     flash(f'Bid-ask spread set to {spread:.2%}', 'success')
-#     return redirect(url_for('index'))
 
 @app.route('/option_analytics', methods=['POST'])
 def option_analytics():
     """Get analytics for an option before adding to portfolio"""
+    # Get the simulator for this session
+    simulator = get_simulator()
+    
     option_type = request.form.get('option_type')
     quantity = int(request.form.get('quantity', 1))  # Default to 1 if not provided
     
