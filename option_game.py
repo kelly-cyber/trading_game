@@ -1,6 +1,15 @@
 import numpy as np
 from flask import current_app
 
+# ---------------------------------------------------------------------------
+# constants you can tune once at startup
+C_DELTA      = 0.001   # ¢ per unit delta
+C_VEGA       = 0.0001  # ¢ per unit vega
+HALF_SPREAD  = 0.02   # 2¢ wide market   ( = 4¢ total width )
+MIN_PRICE    = 0.00   # bids never below zero
+# ---------------------------------------------------------------------------
+
+
 class Option:
     """Base class for all options."""
     def __init__(self, strike):
@@ -30,10 +39,13 @@ class Option:
                 
         return outcomes
         
+<<<<<<< HEAD
     # def delta(self, first_roll=None):
     #     """Delta is the probability of being in the money."""
     #     return self.probability_in_the_money(first_roll)
         
+=======
+>>>>>>> upstream/master
     def vega(self, first_roll=None):
         """Vega is the probability that the roll equals the strike * 36."""
         probs = self.calculate_probabilities(first_roll)
@@ -251,7 +263,7 @@ class DiceSimulator:
     def __init__(self):
         self.rolls = []
         self.portfolio = Portfolio()
-        self.bid_ask_spread = 0.05  # 5% spread by default
+        # self.bid_ask_spread = 0.05  # 5% spread by default
         
     def roll_die(self, value=None):
         """
@@ -402,29 +414,77 @@ class DiceSimulator:
         # Calculate PNL
         return self.portfolio.calculate_pnl(current_values)
 
-    def get_option_analytics(self, option):
+    def get_option_analytics(self, option, quantity=1):
         """
         Calculate and return analytics for an option before adding to portfolio.
         
+        Args:
+            option: The option to analyze
+            quantity: Number of contracts (positive for buy, negative for sell)
+        
         Returns:
-            dict: Contains fair_value, delta, vega, and delta_neutral_quantity
+            dict: Contains fair values, deltas, vegas, bid/ask for total position
         """
-        fair_value = self.calculate_option_value(option)
+        fair_value_per = self.calculate_option_value(option)
+        fair_value_total = fair_value_per * abs(quantity)
         
         # Pass the first roll to delta and vega calculations if available
         first_roll = self.rolls[0] if len(self.rolls) == 1 else None
-        delta = option.delta(first_roll)
-        vega = option.vega(first_roll)
+        delta_per_contract = option.delta(first_roll)
+        vega_per_contract = option.vega(first_roll)
+        
+        # Calculate total delta and vega based on quantity
+        total_delta = delta_per_contract * quantity
+        total_vega = vega_per_contract * quantity
+        
+        # Calculate portfolio-adjusted bid and ask prices for the total position
+        bid_per, ask_per = self.calculate_portfolio_adjusted_prices(fair_value_per, delta_per_contract, vega_per_contract, quantity)
+        bid_total = bid_per * abs(quantity)
+        ask_total = ask_per * abs(quantity)
         
         # Calculate delta-neutral quantity (negative of inverse delta)
         # If delta is zero, we can't be delta neutral with this option
         portfolio_delta = self.portfolio.delta(first_roll)
-        delta_neutral_quantity = -portfolio_delta/delta if delta != 0 else 0
+        delta_neutral_quantity = -portfolio_delta/delta_per_contract if delta_per_contract != 0 else 0
         
         return {
-            'fair_value': fair_value,
-            'delta': delta,
-            'vega': vega,
+            'fair_value_per': fair_value_per,
+            'fair_value_total': fair_value_total,
+            'bid_per': bid_per,
+            'ask_per': ask_per,
+            'bid_total': bid_total,
+            'ask_total': ask_total,
+            'delta_per_contract': delta_per_contract,
+            'vega_per_contract': vega_per_contract,
+            'total_delta': total_delta,
+            'total_vega': total_vega,
             'delta_neutral_quantity': delta_neutral_quantity
         }
 
+
+    def calculate_portfolio_adjusted_prices(
+        self, fair_value, leg_delta, leg_vega, quantity=1
+    ):
+        """
+        Risk-aware bid / ask around fair value, adjusted for how the trade
+        changes *absolute* delta and vega of the book.
+        """
+        first_roll      = self.rolls[0] if len(self.rolls) == 1 else None
+        delta_old       = self.portfolio.delta(first_roll)
+        vega_old        = self.portfolio.vega(first_roll)
+
+        # portfolio after filling ONE lot ( *quantity* already signed )
+        delta_new = delta_old + leg_delta * quantity
+        vega_new  = vega_old  + leg_vega  * quantity
+
+        # +ve => trade improves risk, –ve => trade worsens risk
+        risk_benefit = (
+            C_DELTA * (abs(delta_old) - abs(delta_new))
+            + C_VEGA * (abs(vega_old)  - abs(vega_new))
+        )
+
+        mid_price = fair_value + risk_benefit      # shift mid toward risk benefit
+        bid_price = max(MIN_PRICE, mid_price - HALF_SPREAD)
+        ask_price = mid_price + HALF_SPREAD
+
+        return bid_price, ask_price
