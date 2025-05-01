@@ -30,13 +30,9 @@ class Option:
                 
         return outcomes
         
-    def probability_in_the_money(self, first_roll=None):
-        """Abstract method to be implemented by subclasses."""
-        raise NotImplementedError
-        
-    def delta(self, first_roll=None):
-        """Delta is the probability of being in the money."""
-        return self.probability_in_the_money(first_roll)
+    # def delta(self, first_roll=None):
+    #     """Delta is the probability of being in the money."""
+    #     return self.probability_in_the_money(first_roll)
         
     def vega(self, first_roll=None):
         """Vega is the probability that the roll equals the strike * 36."""
@@ -53,7 +49,7 @@ class Call(Option):
     def __init__(self, strike):
         super().__init__(strike)
         
-    def probability_in_the_money(self, first_roll=None):
+    def delta(self, first_roll=None):
         """Probability that roll >= strike."""
         probs = self.calculate_probabilities(first_roll)
         return sum(probs[self.strike:])
@@ -67,10 +63,10 @@ class Put(Option):
     def __init__(self, strike):
         super().__init__(strike)
         
-    def probability_in_the_money(self, first_roll=None):
+    def delta(self, first_roll=None):
         """Probability that roll <= strike."""
         probs = self.calculate_probabilities(first_roll)
-        return sum(probs[:self.strike+1])
+        return sum(probs[:self.strike])-1
         
     def __str__(self):
         return f"{self.strike} put"
@@ -363,23 +359,6 @@ class DiceSimulator:
             
         else:
             raise ValueError(f"Unsupported option type: {type(option)}")
-    
-    def get_market_prices(self, option):
-        """
-        Get the bid and ask prices for an option.
-        
-        Returns:
-            tuple: (bid, ask) prices in pennies
-        """
-        fair_value = self.calculate_option_value(option)
-        bid = round((fair_value - self.bid_ask_spread/2) * 100)
-        ask = round((fair_value + self.bid_ask_spread/2) * 100)
-        return bid, ask
-    
-    def set_spread(self, spread):
-        """Set the bid-ask spread."""
-        self.bid_ask_spread = spread
-        print(f"Bid-ask spread set to {spread:.2%}")
     
     def add_to_portfolio(self, option, quantity=1, entry_price=None):
         """Add an option position to the portfolio."""

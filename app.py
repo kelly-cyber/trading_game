@@ -20,6 +20,21 @@ def index():
     # Calculate PNL if we have completed two rolls
     total_pnl, position_pnls = simulator.calculate_portfolio_pnl() if len(simulator.rolls) >= 2 else (None, [])
     
+    # Get first_roll if available
+    first_roll = simulator.rolls[0] if len(simulator.rolls) == 1 else None
+    
+    # Calculate updated deltas for all positions in the portfolio
+    position_deltas = []
+    for position, quantity, _ in simulator.portfolio.positions:
+        position_deltas.append({
+            'position': str(position),
+            'delta': position.delta(first_roll),
+            'quantity': quantity,
+            'position_delta': position.delta(first_roll) * quantity
+        })
+    
+    portfolio_delta = simulator.portfolio.delta(first_roll) if simulator.portfolio.positions else 0
+    
     return render_template('index.html', 
                           simulator=simulator,
                           portfolio_value=portfolio_value,
@@ -27,6 +42,9 @@ def index():
                           total=simulator.get_total() if simulator.rolls else 0,
                           total_pnl=total_pnl,
                           position_pnls=position_pnls,
+                          position_deltas=position_deltas,
+                          portfolio_delta=portfolio_delta,
+                          first_roll=first_roll,
                           Call=Call,
                           Put=Put,
                           RiskReversal=RiskReversal,

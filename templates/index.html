@@ -70,8 +70,8 @@
                             </ul>
                             
                             <p><strong>Portfolio Value:</strong> {{ "%.2f"|format(portfolio_value) }}</p>
-                            <p><strong>Delta:</strong> {{ "%.4f"|format(simulator.portfolio.delta()) }}</p>
-                            <p><strong>Vega:</strong> {{ "%.4f"|format(simulator.portfolio.vega()) }}</p>
+                            <p><strong>Delta:</strong> {{ "%.4f"|format(portfolio_delta) }}</p>
+                            <p><strong>Vega:</strong> {{ "%.4f"|format(simulator.portfolio.vega(first_roll)) }}</p>
                             
                             {% if total_pnl is not none %}
                                 <h5 class="mt-3">PNL after 2 rolls</h5>
