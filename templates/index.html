@@ -12,11 +12,29 @@
         .active {
             display: block;
         }
+        .logo {
+            max-width: 200px;
+            margin-bottom: 15px;
+        }
+        .team-members {
+            font-size: 0.9rem;
+            margin-bottom: 20px;
+        }
     </style>
 </head>
 <body>
     <div class="container mt-4">
-        <h1 class="mb-4">Dice Options Trading Simulator</h1>
+        <!-- Logo and Team Members -->
+        <div class="row mb-3">
+            <div class="col-md-12">
+                <img src="{{ url_for('static', filename='images/mit_sloan_logo.jpg') }}" alt="MIT Sloan School of Management" class="logo">
+                <div class="team-members">
+                    <strong>Team Members:</strong> Alexander Podrez, Jiaxin Xu, Rohan Chikkam, Felix Schmedding, Kelly Zhang, Giuseppe Albanese, Natalie Fang, Jialei Lan, Prabhav Kumar
+                </div>
+            </div>
+        </div>
+        
+        <h1 class="mb-4 text-center">Dice Options Trading Simulator</h1>
         
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
@@ -70,8 +88,8 @@
                             </ul>
                             
                             <p><strong>Portfolio Value:</strong> {{ "%.2f"|format(portfolio_value) }}</p>
-                            <p><strong>Delta:</strong> {{ "%.4f"|format(simulator.portfolio.delta()) }}</p>
-                            <p><strong>Vega:</strong> {{ "%.4f"|format(simulator.portfolio.vega()) }}</p>
+                            <p><strong>Delta:</strong> {{ "%.4f"|format(portfolio_delta) }}</p>
+                            <p><strong>Vega:</strong> {{ "%.4f"|format(simulator.portfolio.vega(first_roll)) }}</p>
                             
                             {% if total_pnl is not none %}
                                 <h5 class="mt-3">PNL after 2 rolls</h5>
@@ -91,12 +109,11 @@
                                     <tbody>
                                         {% for position, quantity, entry_price, current_value, pnl in position_pnls %}
                                             <tr>
-                                                <td>{{ quantity }} x {{ position }}</td>
-                                                <td>{{ "%.2f"|format(entry_price) if entry_price is not none else "N/A" }}</td>
-                                                <td>{{ "%.2f"|format(current_value) }}</td>
-                                                <td class="{{ 'text-success' if pnl and pnl > 0 else 'text-danger' if pnl and pnl < 0 else '' }}">
-                                                    {{ "%.2f"|format(pnl) if pnl is not none else "N/A" }}
-                                                </td>
+                                                <td>{{ position }}</td>
+                                                <td>{{ quantity }}</td>
+                                                <td>{{ entry_price }}</td>
+                                                <td>{{ current_value }}</td>
+                                                <td>{{ pnl }}</td>
                                             </tr>
                                         {% endfor %}
                                     </tbody>
@@ -128,6 +145,20 @@
                             </select>
                         </div>
                         
+                        <!-- Option Analytics Display -->
+                        <div id="option-analytics" class="mt-4" style="display: none;">
+                            <div class="card">
+                                <div class="card-header bg-info text-white">Option Analytics</div>
+                                <div class="card-body">
+                                    <p><strong>Option:</strong> <span id="option-name"></span></p>
+                                    <p><strong>Fair Value:</strong> <span id="fair-value"></span></p>
+                                    <p><strong>Delta:</strong> <span id="option-delta"></span></p>
+                                    <p><strong>Vega:</strong> <span id="option-vega"></span></p>
+                                    <p><strong>Delta Neutral Quantity:</strong> <span id="delta-neutral-quantity"></span></p>
+                                </div>
+                            </div>
+                        </div>
+                        
                         <!-- Call Form -->
                         <form action="{{ url_for('add_option') }}" method="post" id="call-form" class="option-form">
                             <input type="hidden" name="option_type" value="call">
@@ -143,7 +174,10 @@
                                 <label for="call_entry_price" class="form-label">Entry Price</label>
                                 <input type="number" name="entry_price" id="call_entry_price" class="form-control" step="0.01" min="0">
                             </div>
-                            <button type="submit" class="btn btn-success">Add to Portfolio</button>
+                            <div class="d-flex gap-2">
+                                <button type="button" class="btn btn-info" onclick="showAnalytics(this.form)">Show Analytics</button>
+                                <button type="submit" class="btn btn-success">Add to Portfolio</button>
+                            </div>
                         </form>
                         
                         <!-- Put Form -->
@@ -161,7 +195,10 @@
                                 <label for="put_entry_price" class="form-label">Entry Price</label>
                                 <input type="number" name="entry_price" id="put_entry_price" class="form-control" step="0.01" min="0">
                             </div>
-                            <button type="submit" class="btn btn-success">Add to Portfolio</button>
+                            <div class="d-flex gap-2">
+                                <button type="button" class="btn btn-info" onclick="showAnalytics(this.form)">Show Analytics</button>
+                                <button type="submit" class="btn btn-success">Add to Portfolio</button>
+                            </div>
                         </form>
                         
                         <!-- Risk Reversal Form -->
@@ -183,7 +220,10 @@
                                 <label for="rr_entry_price" class="form-label">Entry Price</label>
                                 <input type="number" name="entry_price" id="rr_entry_price" class="form-control" step="0.01" min="0">
                             </div>
-                            <button type="submit" class="btn btn-success">Add to Portfolio</button>
+                            <div class="d-flex gap-2">
+                                <button type="button" class="btn btn-info" onclick="showAnalytics(this.form)">Show Analytics</button>
+                                <button type="submit" class="btn btn-success">Add to Portfolio</button>
+                            </div>
                         </form>
                         
                         <!-- Call Spread Form -->
@@ -205,7 +245,10 @@
                                 <label for="cs_entry_price" class="form-label">Entry Price</label>
                                 <input type="number" name="entry_price" id="cs_entry_price" class="form-control" step="0.01" min="0">
                             </div>
-                            <button type="submit" class="btn btn-success">Add to Portfolio</button>
+                            <div class="d-flex gap-2">
+                                <button type="button" class="btn btn-info" onclick="showAnalytics(this.form)">Show Analytics</button>
+                                <button type="submit" class="btn btn-success">Add to Portfolio</button>
+                            </div>
                         </form>
                         
                         <!-- Put Spread Form -->
@@ -227,7 +270,10 @@
                                 <label for="ps_entry_price" class="form-label">Entry Price</label>
                                 <input type="number" name="entry_price" id="ps_entry_price" class="form-control" step="0.01" min="0">
                             </div>
-                            <button type="submit" class="btn btn-success">Add to Portfolio</button>
+                            <div class="d-flex gap-2">
+                                <button type="button" class="btn btn-info" onclick="showAnalytics(this.form)">Show Analytics</button>
+                                <button type="submit" class="btn btn-success">Add to Portfolio</button>
+                            </div>
                         </form>
                         
                         <!-- Straddle Form -->
@@ -245,7 +291,10 @@
                                 <label for="straddle_entry_price" class="form-label">Entry Price</label>
                                 <input type="number" name="entry_price" id="straddle_entry_price" class="form-control" step="0.01" min="0">
                             </div>
-                            <button type="submit" class="btn btn-success">Add to Portfolio</button>
+                            <div class="d-flex gap-2">
+                                <button type="button" class="btn btn-info" onclick="showAnalytics(this.form)">Show Analytics</button>
+                                <button type="submit" class="btn btn-success">Add to Portfolio</button>
+                            </div>
                         </form>
                         
                         <!-- Strangle Form -->
@@ -267,7 +316,10 @@
                                 <label for="strangle_entry_price" class="form-label">Entry Price</label>
                                 <input type="number" name="entry_price" id="strangle_entry_price" class="form-control" step="0.01" min="0">
                             </div>
-                            <button type="submit" class="btn btn-success">Add to Portfolio</button>
+                            <div class="d-flex gap-2">
+                                <button type="button" class="btn btn-info" onclick="showAnalytics(this.form)">Show Analytics</button>
+                                <button type="submit" class="btn btn-success">Add to Portfolio</button>
+                            </div>
                         </form>
                     </div>
                 </div>
@@ -286,7 +338,66 @@
             const selectedOption = document.getElementById('option_selector').value;
             if (selectedOption) {
                 document.getElementById(`${selectedOption}-form`).classList.add('active');
+                
+                // Hide analytics display when changing option type
+                document.getElementById('option-analytics').style.display = 'none';
             }
+        }
+        
+        function showAnalytics(form) {
+            // Get the form data
+            const formData = new FormData(form);
+            
+            // Make sure we have all required values for the option type
+            let allFieldsFilled = true;
+            form.querySelectorAll('input[type="number"]:not([name="quantity"]):not([name="entry_price"])').forEach(input => {
+                if (!input.value) {
+                    allFieldsFilled = false;
+                }
+            });
+            
+            if (!allFieldsFilled) {
+                alert("Please fill in all strike price fields first");
+                return; // Don't make the request if not all fields are filled
+            }
+            
+            // Send request to get analytics
+            fetch('/option_analytics', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    alert(data.error);
+                    return;
+                }
+                
+                // Update the analytics display
+                document.getElementById('option-name').textContent = data.option_name;
+                document.getElementById('fair-value').textContent = data.fair_value;
+                document.getElementById('option-delta').textContent = data.delta;
+                document.getElementById('option-vega').textContent = data.vega;
+                document.getElementById('delta-neutral-quantity').textContent = data.delta_neutral_quantity;
+                
+                // Show the analytics display
+                document.getElementById('option-analytics').style.display = 'block';
+                
+                // Optionally update the quantity field with delta neutral quantity
+                if (data.delta_neutral_quantity !== 0) {
+                    const quantityInput = form.querySelector('input[name="quantity"]');
+                    if (confirm(`Set quantity to delta-neutral value of ${data.delta_neutral_quantity}?`)) {
+                        quantityInput.value = data.delta_neutral_quantity;
+                    }
+                }
+                
+                // Scroll to the analytics section
+                document.getElementById('option-analytics').scrollIntoView({ behavior: 'smooth' });
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred while fetching analytics');
+            });
         }
     </script>
 </body>
