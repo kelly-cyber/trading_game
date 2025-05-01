@@ -249,5 +249,47 @@ def remove_option(index):
         
     return redirect(url_for('index'))
 
+@app.route('/payoff_curve', methods=['POST'])
+def payoff_curve():
+    simulator = get_simulator()
+    option_type = request.form.get('option_type')
+    quantity = int(request.form.get('quantity', 1))
+
+    try:
+        if option_type == 'call':
+            strike = int(request.form.get('strike'))
+            option = Call(strike)
+        elif option_type == 'put':
+            strike = int(request.form.get('strike'))
+            option = Put(strike)
+        elif option_type == 'risk_reversal':
+            put_strike = int(request.form.get('put_strike'))
+            call_strike = int(request.form.get('call_strike'))
+            option = RiskReversal(put_strike, call_strike)
+        elif option_type == 'call_spread':
+            lower_strike = int(request.form.get('lower_strike'))
+            higher_strike = int(request.form.get('higher_strike'))
+            option = CallSpread(lower_strike, higher_strike)
+        elif option_type == 'put_spread':
+            higher_strike = int(request.form.get('higher_strike'))
+            lower_strike = int(request.form.get('lower_strike'))
+            option = PutSpread(higher_strike, lower_strike)
+        elif option_type == 'straddle':
+            strike = int(request.form.get('strike'))
+            option = Straddle(strike)
+        elif option_type == 'strangle':
+            put_strike = int(request.form.get('put_strike'))
+            call_strike = int(request.form.get('call_strike'))
+            option = Strangle(put_strike, call_strike)
+        else:
+            return jsonify({'error': 'Invalid option type'}), 400
+
+        curve = simulator.get_option_payoff_curve(option, quantity)
+        return jsonify(curve)
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 400
+
+
 if __name__ == '__main__':
     app.run(debug=True, port=5001)

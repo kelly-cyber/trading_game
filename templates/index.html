@@ -21,6 +21,7 @@
             margin-bottom: 20px;
         }
     </style>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
     <div class="container mt-4">
@@ -175,6 +176,12 @@
                                         <div class="card-body" id="ask-price-per"></div>
                                     </div>
                                 </div>
+                            </div>
+                            
+                            <!-- Payoff Section -->
+                            <div class="mt-4">
+                                <h4>Payoff Diagram</h4>
+                                <canvas id="payoffChart" width="400" height="200"></canvas>
                             </div>
                             
                             <!-- Total Position Section -->
@@ -410,23 +417,20 @@
         }
         
         function showAnalytics(form) {
-            // Get the form data
             const formData = new FormData(form);
-            
-            // Make sure we have all required values for the option type
+
             let allFieldsFilled = true;
-            form.querySelectorAll('input[type="number"]:not([name="quantity"]):not([name="entry_price"])').forEach(input => {
-                if (!input.value) {
+            form.querySelectorAll('input[type="number"]').forEach(input => {
+                if (input.required && !input.value) {
                     allFieldsFilled = false;
                 }
             });
-            
+
             if (!allFieldsFilled) {
-                alert("Please fill in all strike price fields first");
-                return; // Don't make the request if not all fields are filled
+                alert("Please fill in all required fields first");
+                return;
             }
-            
-            // Send request to get analytics
+
             fetch('/option_analytics', {
                 method: 'POST',
                 body: formData
@@ -437,10 +441,50 @@
                     alert(data.error);
                     return;
                 }
-                
-                // Update the analytics display
-                displayOptionAnalytics(data);
+
+            displayOptionAnalytics(data);
+
+            fetch('/payoff_curve', {
+                method: 'POST',
+                body: formData
             })
+            .then(res => res.json())
+            .then(curve => {
+            console.log('Payoff curve response:', curve);  // Add this line
+
+            if (curve.error) {
+                alert(curve.error);
+                return;
+            }
+
+            const ctx = document.getElementById('payoffChart').getContext('2d');
+            if (window.payoffChart instanceof Chart) {
+                window.payoffChart.destroy();
+            }
+
+            window.payoffChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: curve.totals,
+                    datasets: [{
+                        label: 'Payoff',
+                        data: curve.payoffs,
+                        borderColor: 'blue',
+                        borderWidth: 2,
+                        fill: false,
+                        tension: 0.2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        x: { title: { display: true, text: 'Dice Total' } },
+                        y: { title: { display: true, text: 'Payoff ($)' }, beginAtZero: true }
+                    }
+                }
+            });
+        });
+    })
             .catch(error => {
                 console.error('Error:', error);
                 alert('An error occurred while fetching analytics');
@@ -457,7 +501,6 @@
             document.getElementById('total-delta').textContent = data.total_delta;
             document.getElementById('total-vega').textContent = data.total_vega;
             document.getElementById('delta-neutral').textContent = data.delta_neutral;
-            
             document.getElementById('option-analytics').style.display = 'block';
         }
     </script>

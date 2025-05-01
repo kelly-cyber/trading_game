@@ -88,22 +88,22 @@ class RiskReversal:
     def __init__(self, put_strike, call_strike):
         if put_strike >= call_strike:
             raise ValueError("Put strike must be lower than call strike")
-        self.put = Put(put_strike)
-        self.call = Call(call_strike)
+        self.long_put = Put(put_strike)
+        self.short_call = Call(call_strike)
         
     def delta(self, first_roll=None):
         """Delta of risk reversal is put delta minus call delta."""
-        return self.put.delta(first_roll) - self.call.delta(first_roll)
+        return self.long_put.delta(first_roll) - self.short_call.delta(first_roll)
         
     def vega(self, first_roll=None):
         """Vega of risk reversal is put vega minus call vega."""
-        return self.put.vega(first_roll) - self.call.vega(first_roll)
+        return self.long_put.vega(first_roll) - self.short_call.vega(first_roll)
         
     def __str__(self):
-        return f"{self.put.strike}-{self.call.strike} risk reversal"
+        return f"{self.long_put.strike}-{self.short_call.strike} risk reversal"
 
     def to_dict(self):
-        return {'put_strike': self.put.strike, 'call_strike': self.call.strike}
+        return {'put_strike': self.long_put.strike, 'call_strike': self.short_call.strike}
 
 
 class CallSpread:
@@ -431,11 +431,11 @@ class DiceSimulator:
             short_value = self.calculate_option_value(option.short_put)
             return long_value - short_value
             
-        elif hasattr(option, 'put') and hasattr(option, 'call'):
+        elif hasattr(option, 'long_put') and hasattr(option, 'short_call'):
             # For RiskReversal
-            put_value = self.calculate_option_value(option.put)
-            call_value = self.calculate_option_value(option.call)
-            return put_value - call_value
+            long_value = self.calculate_option_value(option.long_put)
+            short_value = self.calculate_option_value(option.short_call)
+            return long_value - short_value
             
         else:
             raise ValueError(f"Unsupported option type: {type(option)}")
@@ -528,6 +528,40 @@ class DiceSimulator:
             'total_vega': total_vega,
             'delta_neutral_quantity': delta_neutral_quantity
         }
+    
+    def get_option_payoff_curve(self, option, quantity=1):
+        """
+        Return the payoff curve from total=2 to total=12 for the given option.
+        """
+        totals = list(range(2, 13))
+        payoffs = []
+        for total in totals:
+            # Simulate the final outcome
+            if isinstance(option, Call):
+                payoffs.append(quantity * max(total - option.strike, 0))
+            elif isinstance(option, Put):
+                payoffs.append(quantity * max(option.strike - total, 0))
+            elif hasattr(option, 'call') and hasattr(option, 'put'):  # Straddle, Strangle
+                call_payoff = max(total - option.call.strike, 0)
+                put_payoff = max(option.put.strike - total, 0)
+                payoffs.append(quantity * (call_payoff + put_payoff))
+            elif hasattr(option, 'long_call') and hasattr(option, 'short_call'):  # CallSpread
+                long = max(total - option.long_call.strike, 0)
+                short = max(total - option.short_call.strike, 0)
+                payoffs.append(quantity * (long - short))
+            elif hasattr(option, 'long_put') and hasattr(option, 'short_put'):  # PutSpread
+                long = max(option.long_put.strike - total, 0)
+                short = max(option.short_put.strike - total, 0)
+                payoffs.append(quantity * (long - short))
+            elif hasattr(option, 'long_put') and hasattr(option, 'short_call'):  # RiskReversal
+                long = max(option.long_put.strike - total, 0)
+                short = max(total - option.short_call.strike, 0)
+                payoffs.append(quantity * (long - short))
+            else:
+                raise ValueError("Unsupported option for payoff curve")
+        
+        return {'totals': totals, 'payoffs': payoffs}
+
 
 
     def calculate_portfolio_adjusted_prices(
