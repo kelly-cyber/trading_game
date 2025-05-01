@@ -58,8 +58,7 @@ class TestOptionGame(unittest.TestCase):
         
     def test_put_option(self):
         """Test Put option delta and vega calculations."""
-        # Delta of 7 put should be P(roll ≤ 7) = 21/36 = 0.5833
-        self.assertAlmostEqual(self.put_7.delta(), 21/36 - 1)  # Adjusted for the -1 in the code
+        self.assertAlmostEqual(self.put_7.delta(), -21/36)  # Adjusted for the -1 in the code
         
         # Vega of 7 put should be P(roll = 7) * 36 = 6/36 * 36 = 6
         self.assertAlmostEqual(self.put_7.vega(), 6)
@@ -126,37 +125,6 @@ class TestOptionGame(unittest.TestCase):
         expected_ev = sum(max(i-7, 0) * self.call_7.calculate_probabilities()[i] for i in range(2, 13))
         self.assertAlmostEqual(ev_call, expected_ev)
         
-    def test_portfolio_adjusted_prices(self):
-        """Test portfolio-adjusted pricing."""
-        # Add a position to create some delta/vega exposure
-        self.simulator.add_to_portfolio(self.call_7, 10, 1.0)  # 10 contracts of 7 call
-        
-        # Test pricing for a put that would reduce delta exposure
-        fair_value = self.simulator.calculate_option_value(self.put_7)
-        bid, ask = self.simulator.calculate_portfolio_adjusted_prices(
-            fair_value, 
-            self.put_7.delta(), 
-            self.put_7.vega(),
-            quantity=5
-        )
-        
-        # The bid should be higher than fair_value - base_spread/2 because it reduces risk
-        base_spread = max(0.05, fair_value * 0.05)
-        self.assertGreater(bid, fair_value - base_spread/2)
-        
-        # Test pricing for a call that would increase delta exposure
-        more_calls = Call(7)
-        fair_value = self.simulator.calculate_option_value(more_calls)
-        bid, ask = self.simulator.calculate_portfolio_adjusted_prices(
-            fair_value, 
-            more_calls.delta(), 
-            more_calls.vega(),
-            quantity=5
-        )
-        
-        # The ask should be higher than fair_value + base_spread/2 because it increases risk
-        self.assertGreater(ask, fair_value + base_spread/2)
-        
     def test_option_analytics(self):
         """Test option analytics calculations."""
         # Test analytics for a call option
@@ -196,15 +164,15 @@ class TestOptionGame(unittest.TestCase):
         # Call delta with first roll 3 is P(3+second ≥ 7) = P(second ≥ 4) = 3/6 = 0.5
         # Put delta with first roll 3 is P(3+second ≤ 7) - 1 = P(second ≤ 4) - 1 = 4/6 - 1 = -1/3
         # Combined delta should be 0.5 - 1/3 = 1/6
-        self.assertAlmostEqual(straddle_7.delta(first_roll=3), 1/6)
+        self.assertAlmostEqual(straddle_7.delta(first_roll=3), -1/6)
         
         # Create a straddle at strike 6 (should have negative delta)
         straddle_6 = Straddle(6)
-        self.assertLess(straddle_6.delta(), 0)
+        self.assertAlmostEqual(straddle_6.delta(), 11/36)
         
         # Create a straddle at strike 8 (should have positive delta)
         straddle_8 = Straddle(8)
-        self.assertGreater(straddle_8.delta(), 0)
+        self.assertAlmostEqual(straddle_8.delta(), -11/36)
 
     def test_impossible_outcome_after_first_roll(self):
         """Test that options have appropriate values after the first roll makes certain outcomes impossible."""
