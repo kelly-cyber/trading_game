@@ -35,3 +35,13 @@ build/
 # Local development settings
 .env
 .env.local
+
+
+venv/
+__pycache__/
+*.pyc
+*.pyo
+.DS_Store
+.ipynb_checkpoints/
+*.zip
+Optional Assignment2.pdf
