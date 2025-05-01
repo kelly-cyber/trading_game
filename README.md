@@ -1,6 +1,6 @@
 # Dice Options Trading Simulator
 
-![Dice Options Trading Simulator Interface](path/to/simulator-screenshot.png)
+![Dice Options Trading Simulator Interface](./simulator-screenshot.png)
 
 ## Overview
 
