@@ -39,13 +39,6 @@ class Option:
                 
         return outcomes
         
-<<<<<<< HEAD
-    # def delta(self, first_roll=None):
-    #     """Delta is the probability of being in the money."""
-    #     return self.probability_in_the_money(first_roll)
-        
-=======
->>>>>>> upstream/master
     def vega(self, first_roll=None):
         """Vega is the probability that the roll equals the strike * 36."""
         probs = self.calculate_probabilities(first_roll)
