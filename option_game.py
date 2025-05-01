@@ -562,8 +562,6 @@ class DiceSimulator:
         
         return {'totals': totals, 'payoffs': payoffs}
 
-
-
     def calculate_portfolio_adjusted_prices(
         self, fair_value, leg_delta, leg_vega, quantity=1
     ):
@@ -607,3 +605,40 @@ class DiceSimulator:
         simulator.portfolio = Portfolio.from_dict(data['portfolio'])
         # No need to set spread as it's a constant now
         return simulator
+
+    def get_portfolio_payoff_curve(self):
+        """
+        Return the payoff curve from total=2 to total=12 for the entire portfolio.
+        """
+        totals = list(range(2, 13))
+        payoffs = []
+        
+        for total in totals:
+            portfolio_payoff = 0
+            
+            for position, quantity, _ in self.portfolio.positions:
+                # Calculate payoff for each position at this dice total
+                if isinstance(position, Call):
+                    portfolio_payoff += quantity * max(total - position.strike, 0)
+                elif isinstance(position, Put):
+                    portfolio_payoff += quantity * max(position.strike - total, 0)
+                elif hasattr(position, 'call') and hasattr(position, 'put'):  # Straddle, Strangle
+                    call_payoff = max(total - position.call.strike, 0)
+                    put_payoff = max(position.put.strike - total, 0)
+                    portfolio_payoff += quantity * (call_payoff + put_payoff)
+                elif hasattr(position, 'long_call') and hasattr(position, 'short_call'):  # CallSpread
+                    long = max(total - position.long_call.strike, 0)
+                    short = max(total - position.short_call.strike, 0)
+                    portfolio_payoff += quantity * (long - short)
+                elif hasattr(position, 'long_put') and hasattr(position, 'short_put'):  # PutSpread
+                    long = max(position.long_put.strike - total, 0)
+                    short = max(position.short_put.strike - total, 0)
+                    portfolio_payoff += quantity * (long - short)
+                elif hasattr(position, 'long_put') and hasattr(position, 'short_call'):  # RiskReversal
+                    long = max(position.long_put.strike - total, 0)
+                    short = max(total - position.short_call.strike, 0)
+                    portfolio_payoff += quantity * (long - short)
+            
+            payoffs.append(portfolio_payoff)
+        
+        return {'totals': totals, 'payoffs': payoffs}

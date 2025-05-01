@@ -67,7 +67,7 @@ class TestOptionGame(unittest.TestCase):
         """Test option strategies delta and vega calculations."""
         # Risk Reversal: long 5 put, short 9 call
         # Delta = put.delta - call.delta
-        expected_rr_delta = self.risk_reversal.put.delta() - self.risk_reversal.call.delta()
+        expected_rr_delta = self.risk_reversal.long_put.delta() - self.risk_reversal.short_call.delta()
         self.assertAlmostEqual(self.risk_reversal.delta(), expected_rr_delta)
         
         # Call Spread: long 6 call, short 8 call

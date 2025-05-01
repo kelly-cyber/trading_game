@@ -290,6 +290,11 @@ def payoff_curve():
     except Exception as e:
         return jsonify({'error': str(e)}), 400
 
+@app.route('/portfolio_payoff_curve', methods=['GET'])
+def portfolio_payoff_curve():
+    """Return the payoff curve for the entire portfolio."""
+    simulator = get_simulator()
+    return jsonify(simulator.get_portfolio_payoff_curve())
 
 if __name__ == '__main__':
     app.run(debug=True, port=5001)
