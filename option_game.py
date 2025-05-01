@@ -311,6 +311,20 @@ class Portfolio:
         
         return portfolio
 
+    def remove_position(self, index):
+        """
+        Remove a position from the portfolio by index.
+        
+        Args:
+            index: The index of the position to remove
+            
+        Returns:
+            The removed position or None if index is invalid
+        """
+        if 0 <= index < len(self.positions):
+            return self.positions.pop(index)
+        return None
+
 
 class DiceSimulator:
     """Simulates dice rolls and tracks option portfolio performance."""

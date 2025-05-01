@@ -230,5 +230,24 @@ def option_analytics():
     except ValueError as e:
         return jsonify({'error': str(e)}), 400
 
+@app.route('/remove_option/<int:index>', methods=['POST'])
+def remove_option(index):
+    """Remove an option from the portfolio by index"""
+    # Get the simulator for this session
+    simulator = get_simulator()
+    
+    # Try to remove the position
+    removed = simulator.portfolio.remove_position(index)
+    
+    if removed:
+        position, quantity, entry_price = removed
+        # Save the updated simulator state
+        save_simulator(simulator)
+        flash(f'Removed {quantity} x {position} from portfolio', 'success')
+    else:
+        flash('Invalid position index', 'error')
+        
+    return redirect(url_for('index'))
+
 if __name__ == '__main__':
     app.run(debug=True, port=5001)
