@@ -1,14 +1,10 @@
 import numpy as np
 from flask import current_app
 
-# ---------------------------------------------------------------------------
-# constants you can tune once at startup
-C_DELTA      = 0.001   # 0.1¢ per unit delta
-C_VEGA       = 0.0002  # 0.01¢ per unit vega
-HALF_SPREAD  = 0.02   # 2¢ wide market   ( = 4¢ total width )
-MIN_PRICE    = 0.00   # bids never below zero
-# ---------------------------------------------------------------------------
-
+C_VEGA = 0.0002
+ALPHA = 0.0001
+MIN_PRICE = 0
+BASE_SPREAD = 0
 
 class Option:
     """Base class for all options."""
@@ -563,38 +559,34 @@ class DiceSimulator:
         return {'totals': totals, 'payoffs': payoffs}
 
     def calculate_portfolio_adjusted_prices(
-        self, fair_value, leg_delta, leg_vega, quantity=1
+        self, fair_value, delta_trade, vega_trade, quantity=1
     ):
         """
         Risk-aware bid / ask around fair value, adjusted for how the trade
         changes *absolute* delta and vega of the book.
         """
         first_roll      = self.rolls[0] if len(self.rolls) == 1 else None
-        delta_old       = self.portfolio.delta(first_roll)
+        # delta_old       = self.portfolio.delta(first_roll)
         vega_old        = self.portfolio.vega(first_roll)
 
-        # portfolio after filling ONE lot ( *quantity* already signed )
-        delta_new = delta_old + leg_delta * quantity
-        vega_new  = vega_old  + leg_vega  * quantity
+        # delta_new = delta_old + leg_delta * quantity
 
-        # +ve => trade improves risk, –ve => trade worsens risk
-        risk_benefit = (
-            C_DELTA * (abs(delta_old) - abs(delta_new))
-            + C_VEGA * (abs(vega_old)  - abs(vega_new))
-        )
+        vega_new = vega_old + vega_trade * quantity
+        risk_benefit = C_VEGA * (abs(vega_old) - abs(vega_new))
+        mid_price = fair_value + risk_benefit
 
-        mid_price = fair_value + risk_benefit      # shift mid toward risk benefit
-        bid_price = max(MIN_PRICE, mid_price - HALF_SPREAD)
-        ask_price = mid_price + HALF_SPREAD
+        spread = BASE_SPREAD + ALPHA * abs(vega_trade * quantity)
+        bid = max(MIN_PRICE, mid_price - spread / 2)
+        ask = mid_price + spread / 2
 
-        return bid_price, ask_price
+        return bid, ask
 
     def to_dict(self):
         """Convert simulator to a dictionary for session storage"""
         return {
             'rolls': self.rolls.copy(),
             'portfolio': self.portfolio.to_dict(),
-            'spread': HALF_SPREAD  # Store the spread value
+            'spread': BASE_SPREAD  # Store the spread value
         }
 
     @classmethod
