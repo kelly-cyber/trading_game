@@ -3,8 +3,8 @@ from flask import current_app
 
 # ---------------------------------------------------------------------------
 # constants you can tune once at startup
-C_DELTA      = 0.001   # ¢ per unit delta
-C_VEGA       = 0.0001  # ¢ per unit vega
+C_DELTA      = 0.001   # 0.1¢ per unit delta
+C_VEGA       = 0.0002  # 0.01¢ per unit vega
 HALF_SPREAD  = 0.02   # 2¢ wide market   ( = 4¢ total width )
 MIN_PRICE    = 0.00   # bids never below zero
 # ---------------------------------------------------------------------------
@@ -57,7 +57,7 @@ class Call(Option):
     def delta(self, first_roll=None):
         """Probability that roll >= strike."""
         probs = self.calculate_probabilities(first_roll)
-        return sum(probs[self.strike:])
+        return sum(probs[self.strike+1:])+probs[self.strike]/2
         
     def __str__(self):
         return f"{self.strike} call"
@@ -74,7 +74,7 @@ class Put(Option):
     def delta(self, first_roll=None):
         """Probability that roll <= strike."""
         probs = self.calculate_probabilities(first_roll)
-        return -sum(probs[:self.strike+1])
+        return -(sum(probs[:self.strike])+probs[self.strike]/2)
         
     def __str__(self):
         return f"{self.strike} put"
