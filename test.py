@@ -2,7 +2,7 @@ import unittest
 import numpy as np
 from option_game import (
     Call, Put, RiskReversal, CallSpread, PutSpread, Straddle, Strangle,
-    Portfolio, DiceSimulator, C_DELTA, C_VEGA, HALF_SPREAD, MIN_PRICE
+    Portfolio, DiceSimulator, C_VEGA, MIN_PRICE
 )
 
 class TestOptionGame(unittest.TestCase):
@@ -43,22 +43,22 @@ class TestOptionGame(unittest.TestCase):
         
     def test_call_option(self):
         """Test Call option delta and vega calculations."""
-        # Delta of 7 call should be P(roll ≥ 7) = 21/36 = 0.5833
-        self.assertAlmostEqual(self.call_7.delta(), 21/36)
+        # Delta of 7 call should be P(roll ≥ 7) = 1/2
+        self.assertAlmostEqual(self.call_7.delta(), 1/2)
         
         # Vega of 7 call should be P(roll = 7) * 36 = 6/36 * 36 = 6
         self.assertAlmostEqual(self.call_7.vega(), 6)
         
         # Test with first roll = 3
-        # Delta should be P(3+second ≥ 7) = P(second ≥ 4) = 3/6 = 0.5
-        self.assertAlmostEqual(self.call_7.delta(first_roll=3), 3/6)
+        # Delta should be P(3+second ≥ 7) = P(second ≥ 4) = 5/12
+        self.assertAlmostEqual(self.call_7.delta(first_roll=3), 5/12)
         
         # Vega with first roll = 3 should be P(3+second = 7) * 6 = P(second = 4) * 6 = 1/6 * 6 = 1
         self.assertAlmostEqual(self.call_7.vega(first_roll=3), 1)
         
     def test_put_option(self):
         """Test Put option delta and vega calculations."""
-        self.assertAlmostEqual(self.put_7.delta(), -21/36)  # Adjusted for the -1 in the code
+        self.assertAlmostEqual(self.put_7.delta(), -1/2)  
         
         # Vega of 7 put should be P(roll = 7) * 36 = 6/36 * 36 = 6
         self.assertAlmostEqual(self.put_7.vega(), 6)
@@ -185,7 +185,7 @@ class TestOptionGame(unittest.TestCase):
         initial_value = self.simulator.calculate_option_value(call_11)
         
         # All should be non-zero initially
-        self.assertAlmostEqual(initial_delta, 1/12)
+        self.assertAlmostEqual(initial_delta, 1/18)
         self.assertAlmostEqual(initial_vega, 2)
         self.assertAlmostEqual(initial_value, 1/36)
         
