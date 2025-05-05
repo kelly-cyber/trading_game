@@ -2,7 +2,7 @@ import numpy as np
 from flask import current_app
 
 C_VEGA = 0.0001
-ALPHA = 0.002
+ALPHA = 0.0002
 MIN_PRICE = 0
 BASE_SPREAD = 0
 
