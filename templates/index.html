@@ -389,6 +389,37 @@
                 </div>
             </div>
         </div>
+        
+        <!-- Option Fair Values Reference Table -->
+        <div class="card mt-4">
+          <div class="card-header">
+            <h5>Option Fair Values Reference</h5>
+          </div>
+          <div class="card-body">
+            <div class="table-responsive">
+              <table class="table table-striped table-bordered">
+                <thead class="thead-dark">
+                  <tr>
+                    <th>Strike</th>
+                    <th>Call</th>
+                    <th>Put</th>
+                    <th>Straddle</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for i in range(fair_values_table.strikes|length) %}
+                  <tr>
+                    <td>{{ fair_values_table.strikes[i] }}</td>
+                    <td>{{ fair_values_table.call_values[i] }}</td>
+                    <td>{{ fair_values_table.put_values[i] }}</td>
+                    <td>{{ fair_values_table.straddle_values[i] }}</td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
     </div>
     
     <script>

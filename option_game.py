@@ -634,3 +634,36 @@ class DiceSimulator:
             payoffs.append(portfolio_payoff)
         
         return {'totals': totals, 'payoffs': payoffs}
+
+    def get_option_fair_values_table(self):
+        """
+        Generate a table of fair values for calls, puts, and straddles at all strikes.
+        
+        Returns:
+            dict: Contains lists of strikes and fair values for each option type
+        """
+        strikes = list(range(2, 13))
+        call_values = []
+        put_values = []
+        straddle_values = []
+        
+        # Calculate fair values for each strike
+        for strike in strikes:
+            call = Call(strike)
+            put = Put(strike)
+            straddle = Straddle(strike)
+            
+            call_value = self.calculate_option_value(call)
+            put_value = self.calculate_option_value(put)
+            straddle_value = self.calculate_option_value(straddle)
+            
+            call_values.append(round(call_value, 4))
+            put_values.append(round(put_value, 4))
+            straddle_values.append(round(straddle_value, 4))
+        
+        return {
+            'strikes': strikes,
+            'call_values': call_values,
+            'put_values': put_values,
+            'straddle_values': straddle_values
+        }

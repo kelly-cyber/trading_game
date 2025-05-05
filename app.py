@@ -50,6 +50,9 @@ def index():
     
     portfolio_delta = simulator.portfolio.delta(first_roll) if simulator.portfolio.positions else 0
     
+    # Get fair values table
+    fair_values_table = simulator.get_option_fair_values_table()
+    
     return render_template('index.html', 
                           simulator=simulator,
                           portfolio_value=portfolio_value,
@@ -60,6 +63,7 @@ def index():
                           position_deltas=position_deltas,
                           portfolio_delta=portfolio_delta,
                           first_roll=first_roll,
+                          fair_values_table=fair_values_table,
                           Call=Call,
                           Put=Put,
                           RiskReversal=RiskReversal,
